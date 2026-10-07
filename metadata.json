@@ -1,0 +1,6 @@
+{
+  "name": "Prismal - Clinic Management & Booking Platform",
+  "description": "Piattaforma SaaS per la prenotazione e gestione di studi odontoiatrici con dashboard Super Admin, Studio Admin e minisito di prenotazione paziente.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "Studio": {
+      "title": "Studio",
+      "description": "Dental studio profile, configuration and subscription settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved_demo", "active_pro", "suspended"] },
+        "plan": { "type": "string" },
+        "demoSlotsTotal": { "type": "number" },
+        "demoSlotsRemaining": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "slotDurationMinutes": { "type": "number" }
+      },
+      "required": ["id", "name", "slug", "email", "status", "plan"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Patient booking for a dental visit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "studioId": { "type": "string" },
+        "patientFirstName": { "type": "string" },
+        "patientLastName": { "type": "string" },
+        "patientPhone": { "type": "string" },
+        "patientEmail": { "type": "string", "format": "email" },
+        "visitReasonId": { "type": "string" },
+        "visitReasonName": { "type": "string" },
+        "date": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "in_progress", "completed", "cancelled"] },
+        "managementToken": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "gdprConsent": { "type": "boolean" },
+        "gdprConsentTimestamp": { "type": "string" },
+        "gdprPolicyVersion": { "type": "string" },
+        "gdprConsentChannel": { "type": "string" },
+        "gdprConsentPurposes": { "type": "array" }
+      },
+      "required": ["id", "code", "studioId", "patientFirstName", "patientLastName", "date", "timeSlot", "status"]
+    },
+    "BlockedSlot": {
+      "title": "BlockedSlot",
+      "description": "Calendar block for holidays, breaks or meetings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studioId": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "required": ["id", "studioId", "date", "startTime", "endTime"]
+    },
+    "PatientRecord": {
+      "title": "PatientRecord",
+      "description": "Dental electronic health record with anamnesis and odontogram",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studioId": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "fiscalCode": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "allergies": { "type": "string" },
+        "clinicalNotes": { "type": "string" },
+        "gdprSanitaryConsent": { "type": "boolean" },
+        "gdprSanitaryConsentDate": { "type": "string" },
+        "gdprConsentTimestamp": { "type": "string" },
+        "gdprPolicyVersion": { "type": "string" },
+        "gdprConsentChannel": { "type": "string" },
+        "gdprConsentPurposes": { "type": "array" },
+        "gdprConsentProof": { "type": "object" },
+        "consentHistory": { "type": "array" }
+      },
+      "required": ["id", "studioId", "firstName", "lastName", "phone"]
+    },
+    "PlatformTransaction": {
+      "title": "PlatformTransaction",
+      "description": "Payment transactions for subscriptions and addon slot purchases",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "studioId": { "type": "string" },
+        "studioName": { "type": "string" },
+        "amountTotal": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "invoiceNumber", "studioId", "amountTotal", "status"]
+    },
+    "PaymentConfig": {
+      "title": "PaymentConfig",
+      "description": "SuperAdmin gateway payment and payout configuration",
+      "type": "object",
+      "properties": {
+        "bankBeneficiary": { "type": "string" },
+        "bankIban": { "type": "string" },
+        "bankSwiftBic": { "type": "string" },
+        "paypalMerchantEmail": { "type": "string" }
+      },
+      "required": ["bankBeneficiary", "bankIban"]
+    }
+  },
+  "firestore": {
+    "/studios/{studioId}": {
+      "schema": "Studio",
+      "description": "Collection of dental studios registered on PRISMAL"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Appointments booked by patients or studio staff"
+    },
+    "/blockedSlots/{slotId}": {
+      "schema": "BlockedSlot",
+      "description": "Blocked calendar slots for studios"
+    },
+    "/patients/{patientId}": {
+      "schema": "PatientRecord",
+      "description": "Clinical health records, anamnesis, and dental charts for patients"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "PlatformTransaction",
+      "description": "Payment invoices and transactions for subscriptions and slots"
+    },
+    "/adminSettings/{settingId}": {
+      "schema": "PaymentConfig",
+      "description": "Platform settings including payment gateway configuration"
+    }
+  }
+}

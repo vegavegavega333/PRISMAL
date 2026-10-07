@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Studios: public read for minisite discovery and booking; write for registration and studio management
+    match /studios/{studioId} {
+      allow read: if true;
+      allow create: if isValidId(studioId);
+      allow update, delete: if isValidId(studioId);
+    }
+
+    // Appointments: public create for patient online booking; read and update for studio dashboard & booking management
+    match /appointments/{appointmentId} {
+      allow read: if true;
+      allow create: if isValidId(appointmentId);
+      allow update, delete: if isValidId(appointmentId);
+    }
+
+    // Blocked Slots: public read so booking calendar knows unavailable slots; write for studio schedule management
+    match /blockedSlots/{slotId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(slotId);
+    }
+
+    // Patients: clinical records, anamnesis, odontogram, treatment plans
+    match /patients/{patientId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(patientId);
+    }
+
+    // Transactions: payments, invoices, subscriptions, and addon purchases
+    match /transactions/{transactionId} {
+      allow read: if true;
+      allow create, update: if isValidId(transactionId);
+    }
+
+    // Admin Settings: Superadmin payment and payout gateway configuration
+    match /adminSettings/{settingId} {
+      allow read: if true;
+      allow write: if isValidId(settingId);
+    }
+
+    // Test collection for initial connection validation
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
