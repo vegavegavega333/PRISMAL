@@ -107,7 +107,7 @@ export async function registerPasskey(email: string): Promise<{ success: boolean
         user: {
           id: userId,
           name: email.toLowerCase().trim(),
-          displayName: `Diego Raimondi (Super Admin)`,
+          displayName: 'Super Admin PRISMAL',
         },
         pubKeyCredParams: [
           { alg: -7, type: 'public-key' }, // ES256

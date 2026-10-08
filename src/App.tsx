@@ -27,6 +27,19 @@ const MainApp: React.FC = () => {
   // Check for return from Stripe Checkout
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Handle OAuth popup window callback and close automatically
+    if (window.opener && (window.location.hash.includes('access_token') || window.location.search.includes('code'))) {
+      try {
+        window.opener.postMessage({ type: 'PRISMAL_OAUTH_SUCCESS' }, '*');
+      } catch (e) {
+        // ignore cross-origin error
+      }
+      setTimeout(() => {
+        try { window.close(); } catch {}
+      }, 700);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
     const paymentSuccess = params.get('payment_success');

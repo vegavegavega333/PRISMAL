@@ -96,7 +96,7 @@ export const AuthSelectorModal: React.FC<AuthSelectorModalProps> = ({
                   <Lock className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition" />
                 </div>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Console riservata all'amministratore (Diego Raimondi) per abilitare gli studi, assegnare piani e gestire la piattaforma.
+                  Console riservata alla direzione centrale per abilitare gli studi odontoiatrici, configurare i moduli e gestire la piattaforma.
                 </p>
               </div>
             </div>

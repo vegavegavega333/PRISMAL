@@ -186,15 +186,15 @@ export const ADDON_SLOT_PACKAGES: AddonSlotPackage[] = [
 ];
 
 export const DEFAULT_SUPERADMIN_PAYMENT_CONFIG: SuperAdminPaymentConfig = {
-  bankBeneficiary: 'Diego Raimondi - PRISMAL Cloud Suite',
+  bankBeneficiary: 'PRISMAL Cloud Suite',
   bankIban: '',
   bankSwiftBic: '',
   bankName: '',
   bankPaymentInstructions: 'Indicare nella causale del bonifico il nome dello studio dentistico o il codice fattura.',
   paypalEnabled: true,
-  paypalMerchantEmail: 'diegoraimondi7@gmail.com',
+  paypalMerchantEmail: 'prismaldental@gmail.com',
   paypalClientId: '',
-  paypalPaymentLinkUrl: 'https://www.paypal.com/paypalme/diegoraimondi7',
+  paypalPaymentLinkUrl: 'https://paypal.me/prismaldental',
   stripeEnabled: true,
   stripePublishableKey: '',
   stripeSecretKey: '',

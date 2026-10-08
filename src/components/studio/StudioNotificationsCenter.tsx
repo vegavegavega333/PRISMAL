@@ -42,7 +42,7 @@ export const StudioNotificationsCenter: React.FC = () => {
   const [filterChannel, setFilterChannel] = useState<'all' | 'email' | 'sms'>('all');
 
   // Live Test states
-  const [testEmailAddress, setTestEmailAddress] = useState('diegoraimondi7@gmail.com');
+  const [testEmailAddress, setTestEmailAddress] = useState('prismaldental@gmail.com');
   const [isSendingEmailTest, setIsSendingEmailTest] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState<{
     success: boolean;
@@ -324,7 +324,7 @@ export const StudioNotificationsCenter: React.FC = () => {
                   type="email"
                   value={testEmailAddress}
                   onChange={e => setTestEmailAddress(e.target.value)}
-                  placeholder="es. diegoraimondi7@gmail.com"
+                  placeholder="es. prismaldental@gmail.com"
                   className="flex-1 px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 <button

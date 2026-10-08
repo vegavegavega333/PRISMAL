@@ -227,31 +227,37 @@ export const StudioSponsorshipView: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Prestazioni più cercate</span>
-            <div className="space-y-1">
-              {searchAnalytics.popularKeywords.slice(0, 4).map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1 px-2.5 bg-slate-50 rounded-lg">
-                  <span className="font-medium text-slate-800 capitalize">{item.term}</span>
-                  <span className="text-slate-500 text-[11px]">{item.count} ric.</span>
-                </div>
-              ))}
-            </div>
+        {searchAnalytics.totalSearches === 0 ? (
+          <div className="p-4 text-center bg-slate-50 rounded-xl text-xs text-slate-500">
+            Nessuna ricerca paziente registrata al momento. Le query reali effettuate dai pazienti sul portale appariranno qui automaticamente.
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Prestazioni più cercate</span>
+              <div className="space-y-1">
+                {searchAnalytics.popularKeywords.slice(0, 4).map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs py-1 px-2.5 bg-slate-50 rounded-lg">
+                    <span className="font-medium text-slate-800 capitalize">{item.term}</span>
+                    <span className="text-slate-500 text-[11px]">{item.count} ric.</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Comuni e Aree più attive</span>
-            <div className="space-y-1">
-              {searchAnalytics.popularCities.slice(0, 4).map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1 px-2.5 bg-slate-50 rounded-lg">
-                  <span className="font-medium text-slate-800 capitalize">{item.city}</span>
-                  <span className="text-slate-500 text-[11px]">{item.count} ric.</span>
-                </div>
-              ))}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Comuni e Aree più attive</span>
+              <div className="space-y-1">
+                {searchAnalytics.popularCities.slice(0, 4).map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs py-1 px-2.5 bg-slate-50 rounded-lg">
+                    <span className="font-medium text-slate-800 capitalize">{item.city}</span>
+                    <span className="text-slate-500 text-[11px]">{item.count} ric.</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Payment Checkout Modal */}

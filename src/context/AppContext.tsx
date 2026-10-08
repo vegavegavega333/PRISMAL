@@ -38,6 +38,7 @@ import {
 import {
   testFirebaseConnection,
   saveStudioToFirestore,
+  deleteStudioFromFirestore,
   subscribeToStudios,
   saveAppointmentToFirestore,
   updateAppointmentStatusInFirestore,
@@ -51,6 +52,8 @@ import {
   saveSuperAdminPaymentConfigToFirestore,
   subscribeToSuperAdminPaymentConfig,
   savePlatformTransactionToFirestore,
+  deletePlatformTransactionFromFirestore,
+  clearAllPlatformTransactionsFromFirestore,
   subscribeToPlatformTransactions,
 } from '../services/firebase';
 import {
@@ -240,11 +243,14 @@ interface AppContextType {
   }) => Promise<PlatformTransaction>;
   approvePendingTransaction: (txId: string) => void;
   cancelStudioSubscription: (studioId: string) => void;
+  deletePlatformTransaction: (txId: string) => Promise<void>;
+  clearAllPlatformTransactions: () => Promise<void>;
 
   // Search Engine & Analytics
   searchLogs: SearchLogEntry[];
   logSearchQuery: (query: string, location?: string, resultsCount?: number) => void;
   searchAnalytics: SearchAnalyticsSummary;
+  clearSearchLogs: () => void;
 
   // Reset
   resetAllData: () => void;
@@ -330,45 +336,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
       if (saved) return JSON.parse(saved);
-      return [
-        {
-          id: 'tx-seed-1',
-          invoiceNumber: 'FAT-2026-0038',
-          studioId: 'studio-rossi',
-          studioName: 'Studio Odontoiatrico Rossi & Associati',
-          studioEmail: 'segreteria@studiorossi.it',
-          type: 'subscription_monthly',
-          planId: 'prismal_prime',
-          amountNet: 149.0,
-          amountVat: 32.78,
-          amountTotal: 181.78,
-          paymentMethod: 'credit_card',
-          paymentReference: 'CC-AUTH-882194-VISA',
-          status: 'completed',
-          createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-          paidAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-        },
-      ];
+      return [];
     } catch {
       return [];
     }
   });
 
-  // Search Engine Analytics: Tracks patient searches, keywords & cities
+  // Search Engine Analytics: Tracks real patient searches, keywords & cities (only real data)
   const [searchLogs, setSearchLogs] = useState<SearchLogEntry[]>(() => {
     try {
       const saved = localStorage.getItem('prismal_search_logs_v1');
       if (saved) return JSON.parse(saved);
-    } catch {}
-    return [
-      { id: 'sl_1', query: 'igiene', location: 'Milano', resultsCount: 4, timestamp: new Date(Date.now() - 3600000 * 2).toISOString() },
-      { id: 'sl_2', query: 'sbiancamento', location: 'Roma', resultsCount: 3, timestamp: new Date(Date.now() - 3600000 * 4).toISOString() },
-      { id: 'sl_3', query: 'allineatori', location: 'Torino', resultsCount: 2, timestamp: new Date(Date.now() - 3600000 * 7).toISOString() },
-      { id: 'sl_4', query: 'implantologia', location: 'Milano', resultsCount: 4, timestamp: new Date(Date.now() - 3600000 * 11).toISOString() },
-      { id: 'sl_5', query: 'pulizia denti', location: 'Bologna', resultsCount: 2, timestamp: new Date(Date.now() - 3600000 * 18).toISOString() },
-      { id: 'sl_6', query: 'urgenza', location: 'Milano', resultsCount: 4, timestamp: new Date(Date.now() - 3600000 * 26).toISOString() },
-      { id: 'sl_7', query: 'invisalign', location: 'Napoli', resultsCount: 1, timestamp: new Date(Date.now() - 3600000 * 32).toISOString() },
-    ];
+      return [];
+    } catch {
+      return [];
+    }
   });
 
   const logSearchQuery = useCallback((query: string, location?: string, resultsCount: number = 0) => {
@@ -852,11 +834,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [activeStudio?.id]);
 
-  // Super Admin Login - prismaldental@gmail.com & diegoraimondi7@gmail.com
+  // Super Admin Login - ONLY prismaldental@gmail.com with password Ssaazz123!
   const loginSuperAdmin = (email: string, password?: string) => {
     const normalized = email.toLowerCase().trim();
-    const cleanPass = (password || '').trim();
-    const passNoSpaces = cleanPass.replace(/\s+/g, '');
 
     if (!normalized) {
       return {
@@ -865,36 +845,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    const isAuthorizedEmail =
-      normalized === 'prismaldental@gmail.com' ||
-      normalized === 'diegoraimondi7@gmail.com' ||
-      normalized === 'admin@prismal.app';
-
-    // Support flexible authorized passwords and passwordless Google auth for super admin
-    const isAuthorizedPassword =
-      !password ||
-      passNoSpaces === 'xjgjwnwuwoipskvi' ||
-      cleanPass === 'xjgj wnwu woip skvi' ||
-      cleanPass === 'Ssaazz124!' ||
-      cleanPass.toLowerCase() === 'admin' ||
-      cleanPass.toLowerCase() === 'admin123' ||
-      cleanPass.toLowerCase() === 'prismal' ||
-      cleanPass.toLowerCase() === 'password123';
-
-    // Check credentials for authorized Super Admin
-    if (isAuthorizedEmail && isAuthorizedPassword) {
-      const session: AuthSession = {
-        role: 'super_admin',
-        email: normalized,
+    if (normalized !== 'prismaldental@gmail.com') {
+      return {
+        success: false,
+        error: 'Credenziali non autorizzate. Accesso consentito al Super Amministratore (prismaldental@gmail.com).',
       };
-      setAuthSession(session);
-      setCurrentRole('super_admin');
-      return { success: true };
     }
-    return {
-      success: false,
-      error: 'Credenziali non autorizzate. Accesso consentito al Super Amministratore (diegoraimondi7@gmail.com / prismaldental@gmail.com).',
+
+    const cleanPass = (password || '').trim();
+    if (cleanPass !== 'Ssaazz123!') {
+      return {
+        success: false,
+        error: 'Password errata per il Super Amministratore.',
+      };
+    }
+
+    const session: AuthSession = {
+      role: 'super_admin',
+      email: normalized,
     };
+    setAuthSession(session);
+    setCurrentRole('super_admin');
+    return { success: true };
   };
 
   // Studio Login with email
@@ -1006,7 +978,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       phone: '+39 02 9876543',
       address: 'Via Test Odontoiatrico 10',
       city: 'Milano (MI)',
-      status: 'pending', // Starts as pending so Diego can test the approval flow!
+      status: 'pending', // Starts as pending so admin can test the approval flow!
       plan: 'prismal_prime',
       demoSlotsTotal: 99999,
       demoSlotsRemaining: 99999,
@@ -1262,8 +1234,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const name = sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || email;
       const userType = (localStorage.getItem('prismal_supabase_user_type') as UserType) || 'studio';
 
-      if (userType === 'super_admin' || email === 'diegoraimondi7@gmail.com') {
-        const res = loginSuperAdmin(email);
+      if (userType === 'super_admin' || email === 'prismaldental@gmail.com') {
+        const res = loginSuperAdmin(email, 'Ssaazz123!');
         if (res.success) {
           console.log('[Supabase Auth] Logged in as Super Admin:', email);
         }
@@ -1467,15 +1439,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteStudio = (studioId: string) => {
-    setStudios(prev => prev.filter(s => s.id !== studioId));
-    setAppointments(prev => prev.filter(a => a.studioId !== studioId));
-    setBlockedSlots(prev => prev.filter(b => b.studioId !== studioId));
+    setStudios(prev => {
+      const updated = prev.filter(s => s.id !== studioId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.STUDIOS, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setAppointments(prev => {
+      const updated = prev.filter(a => a.studioId !== studioId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setBlockedSlots(prev => {
+      const updated = prev.filter(b => b.studioId !== studioId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.BLOCKED_SLOTS, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     setNotifications(prev => prev.filter(n => n.studioId !== studioId));
     if (currentStudioId === studioId) {
       const remaining = studios.filter(s => s.id !== studioId);
       setCurrentStudioId(remaining.length > 0 ? remaining[0].id : null);
     }
-    // Delete from backend store and Firestore
+    // Delete permanently from Firestore
+    deleteStudioFromFirestore(studioId).catch(() => {});
+
+    // Delete permanently from backend store and Supabase
     try {
       fetch(`/api/studios/${studioId}`, {
         method: 'DELETE',
@@ -1763,6 +1756,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return s;
       })
     );
+  };
+
+  const deletePlatformTransaction = async (txId: string) => {
+    setPlatformTransactions(prev => {
+      const updated = prev.filter(t => t.id !== txId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    deletePlatformTransactionFromFirestore(txId).catch(() => {});
+    fetch(`/api/transactions/${txId}`, { method: 'DELETE' }).catch(() => {});
+  };
+
+  const clearAllPlatformTransactions = async () => {
+    setPlatformTransactions([]);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    } catch (e) {}
+    // Reset any demo studio's last payment amount to 0 so all financial KPIs are truly 0
+    setStudios(prev =>
+      prev.map(s => {
+        if (s.subscription && (s.subscription.lastPaymentAmount || 0) > 0) {
+          const up: Studio = { ...s, subscription: { ...s.subscription, lastPaymentAmount: 0 } };
+          saveStudioToFirestore(up).catch(() => {});
+          return up;
+        }
+        return s;
+      })
+    );
+    clearAllPlatformTransactionsFromFirestore().catch(() => {});
+    fetch('/api/transactions/clear', { method: 'POST' }).catch(() => {});
+  };
+
+  const clearSearchLogs = () => {
+    setSearchLogs([]);
+    try {
+      localStorage.removeItem('prismal_search_logs_v1');
+    } catch (e) {}
   };
 
   // Studio Admin actions
@@ -2428,6 +2460,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppointments(INITIAL_APPOINTMENTS);
     setBlockedSlots(INITIAL_BLOCKED_SLOTS);
     setNotifications(INITIAL_NOTIFICATIONS);
+    setPlatformTransactions([]);
+    setSearchLogs([]);
     setCurrentStudioId('studio-rossi');
     setPatientViewingSlug('studio-rossi');
     setActivePatientToken(null);
@@ -2436,6 +2470,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
     localStorage.removeItem(STORAGE_KEYS.BLOCKED_SLOTS);
     localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    localStorage.removeItem('prismal_search_logs_v1');
   };
 
   return (
@@ -2507,9 +2543,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         processStudioPayment,
         approvePendingTransaction,
         cancelStudioSubscription,
+        deletePlatformTransaction,
+        clearAllPlatformTransactions,
         searchLogs,
         logSearchQuery,
         searchAnalytics,
+        clearSearchLogs,
         resetAllData,
         themeMode,
         resolvedTheme,

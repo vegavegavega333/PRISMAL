@@ -688,7 +688,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                     </div>
                     <div className="mt-3">
                       <span className="text-[10px] text-slate-500 block">
-                        diegoraimondi7
+                        prismaldental
                       </span>
                     </div>
                   </button>
@@ -878,9 +878,9 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                         <Globe className="w-5 h-5 text-sky-700" />
                       </div>
                       <div>
-                        <strong className="text-slate-900 block font-bold text-sm">PayPal - Conto Diego Raimondi</strong>
+                        <strong className="text-slate-900 block font-bold text-sm">PayPal - Conto PRISMAL Dental</strong>
                         <span className="text-[11px] text-slate-600">
-                          Beneficiario: {config.paypalMerchantEmail || 'diegoraimondi7@gmail.com'}
+                          Beneficiario: {config.paypalMerchantEmail || 'prismaldental@gmail.com'}
                         </span>
                       </div>
                     </div>
@@ -890,7 +890,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                   </div>
 
                   <p className="text-[11px] text-slate-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-sky-200/70">
-                    Paga in sicurezza accedendo direttamente al conto PayPal ufficiale di Diego Raimondi ({config.paypalMerchantEmail || 'diegoraimondi7@gmail.com'}). L'importo di <strong>€{totalAmount.toFixed(2)}</strong> viene accreditato istantaneamente sul saldo.
+                    Paga in sicurezza accedendo direttamente al conto PayPal ufficiale PRISMAL ({config.paypalMerchantEmail || 'prismaldental@gmail.com'}). L'importo di <strong>€{totalAmount.toFixed(2)}</strong> viene accreditato istantaneamente sul saldo.
                   </p>
 
                   {/* Official PayPal Buttons Container if Client ID is configured */}
@@ -906,7 +906,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         <div>
                           <span className="font-bold text-slate-900 text-xs block">Paga tramite link PayPal ufficiale:</span>
-                          <span className="text-[10px] text-slate-500">Beneficiario: {config.paypalMerchantEmail || 'diegoraimondi7@gmail.com'}</span>
+                          <span className="text-[10px] text-slate-500">Beneficiario: {config.paypalMerchantEmail || 'prismaldental@gmail.com'}</span>
                         </div>
                         <a
                           href={paypalDirectLink}
@@ -986,7 +986,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                     <div className="bg-white rounded-xl border border-indigo-200 p-3.5 space-y-2.5">
                       <div>
                         <span className="text-[10px] text-slate-400 block uppercase font-bold">Intestatario Beneficiario:</span>
-                        <strong className="text-slate-900 text-xs">{config.bankBeneficiary || 'Diego Raimondi - PRISMAL Cloud'}</strong>
+                        <strong className="text-slate-900 text-xs">{config.bankBeneficiary || 'PRISMAL Cloud Suite'}</strong>
                       </div>
 
                       <div>

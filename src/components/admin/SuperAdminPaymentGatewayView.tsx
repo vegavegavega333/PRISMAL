@@ -27,6 +27,7 @@ import {
   Globe,
   Loader2,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 
 export const SuperAdminPaymentGatewayView: React.FC = () => {
@@ -35,8 +36,13 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
     updateSuperAdminPaymentConfig,
     platformTransactions,
     approvePendingTransaction,
+    deletePlatformTransaction,
+    clearAllPlatformTransactions,
     studios,
   } = useApp();
+
+  const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   const config = superAdminPaymentConfig || DEFAULT_SUPERADMIN_PAYMENT_CONFIG;
 
@@ -205,61 +211,73 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-full overflow-x-hidden">
       {/* Top Financial KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white shadow-md border border-slate-800">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white shadow-md border border-slate-800">
           <div className="flex items-center justify-between text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2">
-            <span>MRR (Ricavi Mensili Ricorrenti)</span>
+            <span>MRR (Ricorrenti)</span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-emerald-400">
+          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400">
             €{estimatedMrr.toLocaleString('it-IT')}
             <span className="text-xs text-slate-300 font-normal ml-1">/mese</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            {activePaidStudios.length} {activePaidStudios.length === 1 ? 'studio con abbonamento a pagamento effettivo' : 'studi con abbonamento a pagamento effettivo'}
+            {activePaidStudios.length} {activePaidStudios.length === 1 ? 'studio con abbonamento attivo' : 'studi con abbonamento attivo'}
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
-            <span>Totale Incassato</span>
-            <DollarSign className="w-4 h-4 text-sky-600" />
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Totale Incassato</span>
+              <DollarSign className="w-4 h-4 text-sky-600" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900">
+              €{totalCollectedRevenue.toFixed(2)}
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              {completedTransactions.length} pagamenti completati con successo
+            </p>
           </div>
-          <div className="text-3xl font-extrabold font-mono text-slate-900">
-            €{totalCollectedRevenue.toFixed(2)}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1">
-            {completedTransactions.length} pagamenti completati con successo
-          </p>
+          {(totalCollectedRevenue > 0 || platformTransactions.length > 0) && (
+            <button
+              type="button"
+              onClick={() => setShowClearConfirmModal(true)}
+              className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline self-start cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Azzera incassi a €0,00</span>
+            </button>
+          )}
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
             <span>Bonifici in Verifica</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold font-mono text-amber-600">
+          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-amber-600">
             {pendingTransactions.length}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            {pendingTransactions.length > 0 ? 'Richiede verifica contabile bonifico' : 'Tutti i bonifici sono stati verificati'}
+            {pendingTransactions.length > 0 ? 'Richiede verifica contabile' : 'Tutti i bonifici verificati'}
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
             <span>Canali di Incasso Attivi</span>
             <CreditCard className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="text-2xl font-extrabold text-slate-900 flex items-center gap-1.5 pt-1">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-1.5 pt-1">
             <span className="px-2 py-0.5 rounded-lg text-xs bg-purple-100 text-purple-800 font-bold">Carta</span>
             <span className="px-2 py-0.5 rounded-lg text-xs bg-sky-100 text-sky-800 font-bold">PayPal</span>
             <span className="px-2 py-0.5 rounded-lg text-xs bg-indigo-100 text-indigo-800 font-bold">IBAN</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            Flussi crittografati SSL 256-bit collegati a Diego Raimondi
+            Flussi crittografati SSL 256-bit
           </p>
         </div>
       </div>
@@ -270,7 +288,7 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
               <ShieldCheck className="w-4 h-4" />
-              Configurazione Incassi Superadmin (Diego Raimondi)
+              Configurazione Incassi Superadmin
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
               Coordinate Bancarie & Portali di Ricezione Pagamenti
@@ -305,7 +323,7 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
                   type="text"
                   value={bankBeneficiary}
                   onChange={e => setBankBeneficiary(e.target.value)}
-                  placeholder="es. Diego Raimondi"
+                  placeholder="es. PRISMAL Cloud S.r.l."
                   className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
@@ -582,14 +600,14 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
                       required={paypalEnabled}
                       value={paypalMerchantEmail}
                       onChange={e => setPaypalMerchantEmail(e.target.value)}
-                      placeholder="diegoraimondi7@gmail.com"
+                      placeholder="prismaldental@gmail.com"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                      Link Diretto Pagamento PayPal (es. paypal.me/DiegoRaimondi o PayPal Checkout URL)
+                      Link Diretto Pagamento PayPal (es. paypal.me/prismaldental o PayPal Checkout URL)
                     </label>
                     <input
                       type="url"
@@ -761,6 +779,18 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
                 Bonifici da Verificare
               </button>
             </div>
+
+            {(platformTransactions.length > 0 || totalCollectedRevenue > 0) && (
+              <button
+                type="button"
+                onClick={() => setShowClearConfirmModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition ml-auto"
+                title="Azzera tutte le transazioni registrate e reimposta l'incasso a 0€"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>Azzera Tutti gli Incassi (0€)</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -845,15 +875,25 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
                     </td>
 
                     <td className="p-3.5 text-right">
-                      {t.status === 'pending_verification' && (
+                      <div className="flex items-center justify-end gap-1.5">
+                        {t.status === 'pending_verification' && (
+                          <button
+                            type="button"
+                            onClick={() => approvePendingTransaction(t.id)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg transition shadow-2xs"
+                          >
+                            Approva
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => approvePendingTransaction(t.id)}
-                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg transition shadow-2xs"
+                          onClick={() => deletePlatformTransaction(t.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Elimina questa transazione"
                         >
-                          Approva Accredito
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -862,6 +902,62 @@ export const SuperAdminPaymentGatewayView: React.FC = () => {
           </div>
         )}
       </div>
+      {/* Confirmation Modal to Clear All Transactions */}
+      {showClearConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Azzera Tutti gli Incassi?
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Operazione contabile Super Admin
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              Confermando, tutte le {platformTransactions.length} transazioni registrate (incluse transazioni demo di prova) verranno eliminate definitivamente. Il <strong>Totale Incassato</strong> tornerà a <strong>€0,00</strong>.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirmModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                disabled={isClearingAll}
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsClearingAll(true);
+                  try {
+                    await clearAllPlatformTransactions();
+                  } finally {
+                    setIsClearingAll(false);
+                    setShowClearConfirmModal(false);
+                  }
+                }}
+                disabled={isClearingAll}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition shadow-xs disabled:opacity-50"
+              >
+                {isClearingAll ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                <span>Azzera a €0,00</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

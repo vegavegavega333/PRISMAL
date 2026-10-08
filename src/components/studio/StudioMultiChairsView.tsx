@@ -897,7 +897,7 @@ export const StudioMultiChairsView: React.FC<StudioMultiChairsViewProps> = ({
                             handleSaveChairs(updated);
                           }}
                           className="text-xs text-slate-800 bg-white border border-slate-300 rounded-xl px-2.5 py-1 flex-1 font-semibold focus:ring-2 focus:ring-purple-500"
-                          placeholder="es. Dott. Diego Raimondi"
+                          placeholder="es. Dott. Mario Rossi"
                         />
                       </div>
                     </div>

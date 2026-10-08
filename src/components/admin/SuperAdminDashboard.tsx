@@ -106,18 +106,18 @@ export const SuperAdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 w-full overflow-x-hidden">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2 text-purple-700 font-semibold text-xs uppercase tracking-wider mb-1">
-            <ShieldCheck className="w-4 h-4" />
-            Piattaforma PRISMAL • Console Super Amministratore (Diego Raimondi)
+            <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Piattaforma PRISMAL • Console Super Admin</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             {activeTab === 'studios' ? 'Gestione & Attivazione Studi Odontoiatrici' : 'Registro Comunicazioni & Delivery Status'}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">
             {activeTab === 'studios'
               ? 'Gestisci tutti gli studi registrati, attiva il mese di prova gratuita con carta collegata o assegna direttamente il piano PRISMAL Prime.'
               : 'Traccia e monitora in tempo reale lo stato di recapito di tutte le email di autenticazione OTP, conferme prenotazione e lead inviate.'}
@@ -125,11 +125,11 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
 
         {/* Action button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {activeTab === 'studios' && (
             <button
               onClick={() => setShowAddStudioModal(true)}
-              className="px-4 py-2.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5"
+              className="w-full sm:w-auto px-3.5 sm:px-4 py-2 sm:py-2.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Nuovo Studio Manuale</span>
@@ -138,12 +138,12 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Module Tabs Switcher */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mt-6 pb-2">
+      {/* Main Module Tabs Switcher - Horizontal scroll on mobile */}
+      <div className="flex items-center gap-2 border-b border-slate-200 mt-4 sm:mt-6 pb-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap -mx-3 px-3 sm:mx-0 sm:px-0 touch-pan-x">
         <button
           id="tab-studios"
           onClick={() => setActiveTab('studios')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
             activeTab === 'studios'
               ? 'bg-purple-700 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -156,7 +156,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <button
           id="tab-communication-log"
           onClick={() => setActiveTab('communication_log')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition relative ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition relative ${
             activeTab === 'communication_log'
               ? 'bg-purple-700 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -173,7 +173,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <button
           id="tab-payments"
           onClick={() => setActiveTab('payments')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
             activeTab === 'payments'
               ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm'
               : 'text-purple-700 hover:text-purple-900 bg-purple-50/70'
@@ -186,7 +186,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <button
           id="tab-sponsorship"
           onClick={() => setActiveTab('sponsorship')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
             activeTab === 'sponsorship'
               ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-sm'
               : 'text-amber-800 hover:text-amber-950 bg-amber-50/80 border border-amber-200/70'
@@ -199,7 +199,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <button
           id="tab-supabase-twilio"
           onClick={() => setActiveTab('supabase_twilio')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
             activeTab === 'supabase_twilio'
               ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm'
               : 'text-emerald-800 hover:text-emerald-950 bg-emerald-50/80 border border-emerald-200/70'
@@ -380,15 +380,15 @@ export const SuperAdminDashboard: React.FC = () => {
                   className="p-5 hover:bg-slate-50/80 transition flex flex-col lg:flex-row lg:items-center justify-between gap-5"
                 >
                   {/* Studio Info */}
-                  <div className="flex items-start gap-4 min-w-[280px]">
+                  <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1 w-full">
                     <img
                       src={studio.logoUrl}
                       alt={studio.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm flex-shrink-0"
+                      className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl object-cover border border-slate-200 shadow-sm flex-shrink-0"
                     />
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base font-bold text-slate-900">{studio.name}</h3>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 break-words">{studio.name}</h3>
 
                         {/* Status badge */}
                         {studio.status === 'pending' && (
@@ -417,7 +417,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
+                      <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2 sm:gap-3 break-all">
                         <span>{studio.email}</span>
                         <span>•</span>
                         <span>{studio.city}</span>
@@ -425,8 +425,8 @@ export const SuperAdminDashboard: React.FC = () => {
                         <span>{studio.phone}</span>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-slate-400">
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-mono text-slate-400 break-all">
                           prismal.app/punti/{studio.slug}
                         </span>
                         <button
@@ -434,7 +434,7 @@ export const SuperAdminDashboard: React.FC = () => {
                             setPatientViewingSlug(studio.slug);
                             setCurrentRole('patient');
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-800 font-semibold underline ml-1"
+                          className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-800 font-semibold underline"
                         >
                           <Eye className="w-3 h-3" />
                           Apri Minisito Paziente
@@ -444,7 +444,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
 
                   {/* Slot Tracker for Demo accounts */}
-                  <div className="flex flex-col justify-center min-w-[200px]">
+                  <div className="flex flex-col justify-center w-full lg:w-auto min-w-0 lg:min-w-[180px]">
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="font-semibold text-slate-600">
                         {isDemo ? 'Slot Demo Rimanenti' : 'Abbonamento'}
@@ -499,10 +499,10 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
 
                   {/* Admin Actions & Plan Switcher */}
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto pt-3 lg:pt-0 border-t border-slate-100 lg:border-0">
                     {/* If pending, highlight approve button or reject/delete */}
                     {studio.status === 'pending' ? (
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
                         <button
                           id={`approve-demo-${studio.id}`}
                           onClick={() => approveStudioDemo(studio.id)}
@@ -528,16 +528,16 @@ export const SuperAdminDashboard: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        {/* Plan Selector Dropdown for Diego */}
-                        <div className="flex items-center gap-1">
+                        {/* Plan Selector Dropdown */}
+                        <div className="flex items-center gap-1 w-full sm:w-auto min-w-0">
                           <select
                             value={studio.plan}
                             onChange={e => setStudioPlan(studio.id, e.target.value as PlanType)}
-                            className="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full sm:w-auto px-2.5 py-1.5 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 max-w-full truncate"
                             title="Cambia piano assegnato a questo studio"
                           >
-                            <option value="prismal_prime">PRISMAL Prime (€{PRISMAL_PRIME_PRICE_MONTHLY}/m - All-Inclusive)</option>
-                            <option value="trial_30d">30 Giorni di Prova Gratuita (0,00€)</option>
+                            <option value="prismal_prime">PRISMAL Prime (€{PRISMAL_PRIME_PRICE_MONTHLY}/m)</option>
+                            <option value="trial_30d">30 Giorni Prova (0€)</option>
                           </select>
                         </div>
 

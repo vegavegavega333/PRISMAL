@@ -382,7 +382,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Cerca prestazione o studio (es. Igiene, Sbiancamento, Impianti...)"
+                placeholder="Prestazione o studio"
                 className="w-full h-full text-sm font-medium text-slate-900 placeholder-slate-400 bg-transparent focus:outline-none"
               />
               {searchQuery && (
@@ -413,7 +413,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                 type="text"
                 value={locationQuery}
                 onChange={e => setLocationQuery(e.target.value)}
-                placeholder="Città o indirizzo (opzionale)"
+                placeholder="Città"
                 className="w-full h-full text-sm font-medium text-slate-900 placeholder-slate-400 bg-transparent focus:outline-none"
               />
 
@@ -449,7 +449,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Prestazione o studio (es. Igiene, Sbiancamento)"
+                placeholder="Prestazione o studio"
                 className="flex-1 min-w-0 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none"
               />
               {searchQuery && (
@@ -477,7 +477,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                 type="text"
                 value={locationQuery}
                 onChange={e => setLocationQuery(e.target.value)}
-                placeholder="Città (es. Dello, Brescia, Milano)"
+                placeholder="Città"
                 className="flex-1 min-w-0 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none"
               />
               <button

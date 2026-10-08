@@ -5,7 +5,7 @@ export const DEFAULT_DENTAL_CHAIRS: DentalChair[] = [
     id: 'chair-1',
     name: 'Poltrona 1',
     department: 'Parodontologia & Chirurgia',
-    defaultOperator: 'Dott. Diego Raimondi',
+    defaultOperator: 'Dott. Marco Bianchi',
     color: 'purple',
     isActive: true,
     notes: 'Dotata di microscopio operatorio, piezo-surgery e kit implantare avanzato.',

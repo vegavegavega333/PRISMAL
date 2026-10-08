@@ -126,6 +126,18 @@ export async function updateStudioInFirestore(studioId: string, updates: Partial
 }
 
 /**
+ * Delete a studio permanently from Firestore
+ */
+export async function deleteStudioFromFirestore(studioId: string): Promise<void> {
+  try {
+    const docRef = doc(db, STUDIOS_COLLECTION, studioId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.error('[Firebase] Error deleting studio from Firestore:', err);
+  }
+}
+
+/**
  * Subscribe in real-time to all studios
  */
 export function subscribeToStudios(callback: (studios: Studio[]) => void): () => void {
@@ -376,6 +388,31 @@ export async function savePlatformTransactionToFirestore(tx: PlatformTransaction
     await setDoc(docRef, tx, { merge: true });
   } catch (err) {
     console.error('[Firebase] Error saving transaction:', err);
+  }
+}
+
+/**
+ * Delete a platform transaction from Firestore
+ */
+export async function deletePlatformTransactionFromFirestore(txId: string): Promise<void> {
+  try {
+    const docRef = doc(db, TRANSACTIONS_COLLECTION, txId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.error('[Firebase] Error deleting transaction:', err);
+  }
+}
+
+/**
+ * Delete all platform transactions from Firestore
+ */
+export async function clearAllPlatformTransactionsFromFirestore(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, TRANSACTIONS_COLLECTION));
+    const batchPromises = snap.docs.map(d => deleteDoc(d.ref));
+    await Promise.all(batchPromises);
+  } catch (err) {
+    console.error('[Firebase] Error clearing all transactions:', err);
   }
 }
 

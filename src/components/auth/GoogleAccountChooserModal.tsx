@@ -11,7 +11,22 @@ export interface GoogleAccount {
 
 const STORAGE_KEY = 'prismal_saved_google_accounts';
 
-const DEFAULT_ACCOUNTS: GoogleAccount[] = [];
+const DEFAULT_ACCOUNTS: GoogleAccount[] = [
+  {
+    email: 'prismaldental@gmail.com',
+    name: 'PRISMAL Dental (Super Admin)',
+    avatarLetter: 'P',
+    bgColor: 'bg-purple-700',
+    isPrimary: true,
+  },
+  {
+    email: 'admin@prismal.app',
+    name: 'PRISMAL Platform Administrator',
+    avatarLetter: 'A',
+    bgColor: 'bg-slate-700',
+    isPrimary: false,
+  },
+];
 
 interface GoogleAccountChooserModalProps {
   isOpen: boolean;
@@ -143,7 +158,7 @@ export const GoogleAccountChooserModal: React.FC<GoogleAccountChooserModalProps>
   };
 
   const handleConfirmExternalAuth = (emailToConfirm?: string) => {
-    const target = emailToConfirm || selectedEmail || (accounts.length > 0 ? accounts[0].email : 'diegoraimondi7@gmail.com');
+    const target = emailToConfirm || selectedEmail || (accounts.length > 0 ? accounts[0].email : 'prismaldental@gmail.com');
     const account = accounts.find(a => a.email === target) || {
       email: target,
       name: target.split('@')[0],
@@ -358,7 +373,7 @@ export const GoogleAccountChooserModal: React.FC<GoogleAccountChooserModalProps>
                     type="text"
                     value={customName}
                     onChange={e => setCustomName(e.target.value)}
-                    placeholder="Es. Dott. Diego Raimondi"
+                    placeholder="Es. Dott. Mario Rossi"
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4285F4] focus:bg-white transition"
                   />
                 </div>

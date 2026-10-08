@@ -20,6 +20,7 @@ import {
   getSupabaseSqlSchema,
   uploadToSupabaseStorage,
   syncRecordToSupabase,
+  deleteRecordFromSupabase,
   fetchTableRowsFromSupabase,
   syncAllDataToSupabase,
 } from './server/supabase';
@@ -212,15 +213,15 @@ function loadAppointmentsFromDisk() {
 }
 
 let serverPaymentConfig: any = {
-  bankBeneficiary: 'Diego Raimondi - PRISMAL Cloud Suite',
+  bankBeneficiary: 'PRISMAL Cloud Suite',
   bankIban: '',
   bankSwiftBic: '',
   bankName: '',
   bankPaymentInstructions: 'Inviare bonifico SEPA indicando il Nome Studio o Numero Fattura.',
   paypalEnabled: true,
-  paypalMerchantEmail: 'diegoraimondi7@gmail.com',
+  paypalMerchantEmail: 'prismaldental@gmail.com',
   paypalClientId: '',
-  paypalPaymentLinkUrl: 'https://www.paypal.com/paypalme/diegoraimondi7',
+  paypalPaymentLinkUrl: 'https://www.paypal.com/paypalme/prismaldental',
   stripeEnabled: true,
   stripePublishableKey: '',
   stripeSecretKey: '',
@@ -595,10 +596,11 @@ app.put('/api/studios/:id', (req, res) => {
   res.json({ success: true, studio: updated });
 });
 
-app.delete('/api/studios/:id', (req, res) => {
+app.delete('/api/studios/:id', async (req, res) => {
   const { id } = req.params;
   const existed = serverStudios.delete(id);
   saveStudiosToDisk();
+  await deleteRecordFromSupabase('studios', id).catch(() => {});
   res.json({ success: true, deleted: id, existed });
 });
 
@@ -1245,7 +1247,7 @@ app.post('/api/payments/stripe-connect/create-account-link', async (req, res) =>
       const account = await stripe.accounts.create({
         type: 'express',
         country: 'IT',
-        email: serverPaymentConfig?.paypalMerchantEmail || 'diegoraimondi7@gmail.com',
+        email: serverPaymentConfig?.paypalMerchantEmail || 'prismaldental@gmail.com',
         business_type: 'individual',
         capabilities: {
           card_payments: { requested: true },
@@ -2202,6 +2204,19 @@ app.post('/api/transactions/:id/approve', (req, res) => {
   }
 
   res.json({ success: true, transaction: updated });
+});
+
+app.delete('/api/transactions/:id', (req, res) => {
+  const { id } = req.params;
+  const existed = serverTransactions.delete(id);
+  saveTransactionsToDisk();
+  res.json({ success: true, deleted: existed });
+});
+
+app.post('/api/transactions/clear', (req, res) => {
+  serverTransactions.clear();
+  saveTransactionsToDisk();
+  res.json({ success: true, message: 'Tutte le transazioni sono state azzerate' });
 });
 
 // Appointments sync endpoints

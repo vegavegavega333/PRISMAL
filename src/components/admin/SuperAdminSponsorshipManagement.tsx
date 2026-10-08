@@ -29,6 +29,7 @@ export const SuperAdminSponsorshipManagement: React.FC = () => {
     updateSuperAdminPaymentConfig,
     platformTransactions,
     searchAnalytics,
+    clearSearchLogs,
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -420,76 +421,111 @@ export const SuperAdminSponsorshipManagement: React.FC = () => {
           <div>
             <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-purple-600" />
-              <span>Analisi Ricerche & Domanda Pazienti di Piattaforma</span>
+              <span>Analisi Ricerche & Domanda Pazienti di Piattaforma (Solo Dati Reali)</span>
             </h3>
             <p className="text-xs text-slate-500">
-              Query digitate dai visitatori nella barra di ricerca PRISMAL.
+              Query effettivamente digitate dagli utenti nella barra di ricerca PRISMAL (nessun dato fittizio).
             </p>
           </div>
-          <div className="bg-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700">
-            {searchAnalytics.totalSearches} Ricerche Totali Registrate
+          <div className="flex items-center gap-2">
+            <div className="bg-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700">
+              {searchAnalytics.totalSearches} Ricerche Reali Registrate
+            </div>
+            {searchAnalytics.totalSearches > 0 && (
+              <button
+                type="button"
+                onClick={clearSearchLogs}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition"
+                title="Azzera il registro delle ricerche reali"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Azzera</span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Top Keywords */}
-          <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-              Trattamenti & Parole Chiave Top
-            </span>
-            <div className="space-y-1.5">
-              {searchAnalytics.popularKeywords.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50 last:border-0">
-                  <span className="font-semibold text-slate-800 capitalize">
-                    {idx + 1}. {item.term}
-                  </span>
-                  <span className="text-slate-500 bg-white px-2 py-0.5 rounded text-[11px] font-mono">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
-            </div>
+        {searchAnalytics.totalSearches === 0 ? (
+          <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500 space-y-1.5">
+            <TrendingUp className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs font-bold text-slate-700">Nessuna ricerca paziente registrata finora</p>
+            <p className="text-[11px] text-slate-400 max-w-md mx-auto">
+              I dati fittizi sono stati rimossi. Non appena i pazienti o visitatori cercheranno prestazioni (es. "igiene", "sbiancamento") o città sul motore di ricerca PRISMAL, le query reali appariranno qui in tempo reale.
+            </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Top Keywords */}
+            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                Trattamenti & Parole Chiave Top
+              </span>
+              <div className="space-y-1.5">
+                {searchAnalytics.popularKeywords.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-2">Nessun termine registrato</p>
+                ) : (
+                  searchAnalytics.popularKeywords.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50 last:border-0">
+                      <span className="font-semibold text-slate-800 capitalize">
+                        {idx + 1}. {item.term}
+                      </span>
+                      <span className="text-slate-500 bg-white px-2 py-0.5 rounded text-[11px] font-mono">
+                        {item.count}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-          {/* Top Cities */}
-          <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-              Città con Maggiore Volume
-            </span>
-            <div className="space-y-1.5">
-              {searchAnalytics.popularCities.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50 last:border-0">
-                  <span className="font-semibold text-slate-800 capitalize">
-                    {idx + 1}. {item.city}
-                  </span>
-                  <span className="text-slate-500 bg-white px-2 py-0.5 rounded text-[11px] font-mono">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
+            {/* Top Cities */}
+            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                Città con Maggiore Volume
+              </span>
+              <div className="space-y-1.5">
+                {searchAnalytics.popularCities.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-2">Nessuna città registrata</p>
+                ) : (
+                  searchAnalytics.popularCities.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50 last:border-0">
+                      <span className="font-semibold text-slate-800 capitalize">
+                        {idx + 1}. {item.city}
+                      </span>
+                      <span className="text-slate-500 bg-white px-2 py-0.5 rounded text-[11px] font-mono">
+                        {item.count}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Recent Searches Log */}
-          <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-              Ultime Ricerche Pazienti
-            </span>
-            <div className="space-y-1.5">
-              {searchAnalytics.recentSearches.slice(0, 5).map((item, idx) => (
-                <div key={idx} className="text-xs py-1 border-b border-slate-200/50 last:border-0 flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-purple-700 capitalize">"{item.query || 'Tutti gli studi'}"</span>
-                    {item.location && <span className="text-slate-500 text-[11px]"> a {item.location}</span>}
-                  </div>
-                  <span className="text-[10px] text-slate-400">
-                    {new Date(item.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              ))}
+            {/* Recent Searches Log */}
+            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                Ultime Ricerche Pazienti
+              </span>
+              <div className="space-y-1.5">
+                {searchAnalytics.recentSearches.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-2">Nessuna ricerca recente</p>
+                ) : (
+                  searchAnalytics.recentSearches.slice(0, 5).map((item, idx) => (
+                    <div key={idx} className="text-xs py-1 border-b border-slate-200/50 last:border-0 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-purple-700 capitalize">"{item.query || 'Tutti gli studi'}"</span>
+                        {item.location && <span className="text-slate-500 text-[11px]"> a {item.location}</span>}
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(item.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

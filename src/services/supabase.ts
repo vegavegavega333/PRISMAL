@@ -29,15 +29,21 @@ export async function signInWithGoogleSupabase(userType: UserType = 'studio') {
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem('prismal_supabase_user_type', userType);
-      localStorage.setItem('prismal_auth_target_role', userType === 'patient' ? 'patient' : 'studio_admin');
+      localStorage.setItem(
+        'prismal_auth_target_role',
+        userType === 'patient' ? 'patient' : userType === 'super_admin' ? 'super_admin' : 'studio_admin'
+      );
     }
 
-    const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const redirectTo = typeof window !== 'undefined'
+      ? (window.location.origin.endsWith('/') ? window.location.origin : `${window.location.origin}/`)
+      : undefined;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -50,10 +56,34 @@ export async function signInWithGoogleSupabase(userType: UserType = 'studio') {
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    if (data?.url && typeof window !== 'undefined') {
+      const inIframe = window.self !== window.top;
+      if (inIframe) {
+        // In iframe environment (Cloud Run / AI Studio preview), opening inside iframe gets blocked by Google's X-Frame-Options: SAMEORIGIN.
+        // Therefore, open the official classic Google Login window centered on screen!
+        const width = 520;
+        const height = 640;
+        const left = Math.max(0, Math.round(window.screen.width / 2 - width / 2));
+        const top = Math.max(0, Math.round(window.screen.height / 2 - height / 2));
+        const popup = window.open(
+          data.url,
+          'GoogleAuthPopup',
+          `width=${width},height=${height},top=${top},left=${left},status=no,menubar=no,toolbar=no,scrollbars=yes`
+        );
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          // If popup was blocked, open in new tab
+          window.open(data.url, '_blank');
+        }
+      } else {
+        // Direct browser redirect to classic Google screen!
+        window.location.href = data.url;
+      }
+    }
+
+    return { success: true, data, url: data?.url };
   } catch (err: any) {
-    console.error('[Supabase Auth] Unexpected Error:', err);
-    return { success: false, error: err?.message || 'Errore di autenticazione con Supabase' };
+    console.error('[Google Auth] Unexpected Error:', err);
+    return { success: false, error: err?.message || 'Errore durante l\'autenticazione con Google' };
   }
 }
 

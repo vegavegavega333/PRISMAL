@@ -149,6 +149,22 @@ export async function syncRecordToSupabase(table: string, record: any) {
 }
 
 /**
+ * Delete a record from Supabase PostgreSQL table
+ */
+export async function deleteRecordFromSupabase(table: string, id: string) {
+  const sb = getSupabaseAdmin();
+  try {
+    const { error } = await sb.from(table).delete().eq('id', id);
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
  * Fetch rows and exact count from Supabase PostgreSQL table
  */
 export async function fetchTableRowsFromSupabase(table: string, limit = 50) {

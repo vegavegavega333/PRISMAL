@@ -178,18 +178,18 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in font-sans">
+    <div className="space-y-6 animate-fade-in font-sans max-w-full overflow-x-hidden">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-white p-6 rounded-3xl border border-emerald-500/20 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-            <Cloud className="w-6 h-6 text-emerald-400" />
+      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-emerald-500/20 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+            <Cloud className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-black text-white">Hub Integrazioni Supabase & Twilio</h2>
+              <h2 className="text-base sm:text-lg font-black text-white">Hub Integrazioni Supabase & Twilio</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                100% Configurato & Connesso
+                100% Connesso
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
@@ -201,7 +201,7 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
         <button
           onClick={loadStatus}
           disabled={isLoading}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer self-start sm:self-center"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer w-full sm:w-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           <span>Aggiorna Stato</span>
@@ -214,22 +214,22 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
         {/* ========================================================= */}
         {/* CARD 1: SUPABASE CLOUD (AUTH, STORAGE, POSTGRESQL)       */}
         {/* ========================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 sm:pb-4 gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
                 <Database className="w-4 h-4" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-900">Supabase Cloud Platform</h3>
-                <span className="text-[10px] text-slate-500">ID: dqbphjwbrhxoqlhupydq</span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-black text-slate-900 truncate">Supabase Cloud Platform</h3>
+                <span className="text-[10px] text-slate-500 font-mono block truncate">ID: dqbphjwbrhxoqlhupydq</span>
               </div>
             </div>
             <a
               href="https://supabase.com/dashboard/project/dqbphjwbrhxoqlhupydq"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 hover:underline"
+              className="text-[11px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 hover:underline self-start sm:self-auto"
             >
               <span>Dashboard Ufficiale</span>
               <ExternalLink className="w-3 h-3" />
@@ -237,61 +237,61 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold block">Utenti Auth</span>
-              <span className="text-lg font-black text-slate-900">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+            <div className="p-2 sm:p-3 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 text-center">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-semibold block truncate">Utenti Auth</span>
+              <span className="text-base sm:text-lg font-black text-slate-900">
                 {status?.supabase?.auth?.usersCount ?? 2}
               </span>
-              <span className="text-[9px] text-emerald-600 font-bold block">Google & Email</span>
+              <span className="text-[8px] sm:text-[9px] text-emerald-600 font-bold block truncate">Google & OTP</span>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold block">Bucket Storage</span>
-              <span className="text-lg font-black text-slate-900">
+            <div className="p-2 sm:p-3 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 text-center">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-semibold block truncate">Bucket Storage</span>
+              <span className="text-base sm:text-lg font-black text-slate-900">
                 {status?.supabase?.storage?.buckets?.length ?? 1}
               </span>
-              <span className="text-[9px] text-emerald-600 font-bold block">prismal-media</span>
+              <span className="text-[8px] sm:text-[9px] text-emerald-600 font-bold block truncate">prismal-media</span>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-              <span className="text-[10px] text-slate-500 font-semibold block">Tabelle Postgres</span>
-              <span className="text-lg font-black text-slate-900">
+            <div className="p-2 sm:p-3 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 text-center">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-semibold block truncate">Tabelle Postgres</span>
+              <span className="text-base sm:text-lg font-black text-slate-900">
                 {status?.supabase?.database?.allTablesReady ? 'Pronte (5/5)' : 'Pronto DDL'}
               </span>
-              <span className="text-[9px] text-indigo-600 font-bold block">Schema SQL</span>
+              <span className="text-[8px] sm:text-[9px] text-indigo-600 font-bold block truncate">Schema SQL</span>
             </div>
           </div>
 
           {/* Sub-section: 1-Click Copy Schema SQL */}
-          <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-700" />
-                <span className="text-xs font-black text-emerald-950">Script SQL Tabelle Supabase</span>
+          <div className="p-3 sm:p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                <span className="text-xs font-black text-emerald-950 truncate">Script SQL Tabelle Supabase</span>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
                 >
                   {copiedSql ? (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      <span>Copiato negli Appunti!</span>
+                      <span>Copiato!</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5" />
-                      <span>Copia Script SQL</span>
+                      <span>Copia Script</span>
                     </>
                   )}
                 </button>
                 <a
                   href="/api/supabase/schema.sql"
                   download="schema.sql"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Scarica .sql</span>
@@ -300,7 +300,7 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
                   href="https://supabase.com/dashboard/project/dqbphjwbrhxoqlhupydq/sql/new"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Apri SQL Editor</span>
@@ -381,44 +381,44 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
         {/* ========================================================= */}
         {/* CARD 2: TWILIO SMS GATEWAY                                */}
         {/* ========================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 sm:pb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold flex-shrink-0">
                 <MessageSquare className="w-4 h-4" />
               </div>
-              <div>
-                <h3 className="text-sm font-black text-slate-900">Twilio SMS Gateway</h3>
-                <span className="text-[10px] text-slate-500">Credenziali Ufficiali Configurate</span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-black text-slate-900 truncate">Twilio SMS Gateway</h3>
+                <span className="text-[10px] text-slate-500 block truncate">Credenziali Ufficiali Configurate</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 flex-shrink-0">
               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
               <span>Attivo</span>
             </span>
           </div>
 
-          {/* Account Details Box */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-semibold">Account SID:</span>
-              <span className="font-mono text-slate-900 font-bold">
+          {/* Account Details Box - Wrapped and responsive */}
+          <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-slate-500 font-semibold text-[11px]">Account SID:</span>
+              <span className="font-mono text-slate-900 font-bold text-[11px] break-all">
                 {status?.twilio?.accountSid || 'AC6f93f426d54226c3df72d97f8783e27d'}
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-semibold">Auth Token:</span>
-              <span className="font-mono text-slate-600">••••••••••••••••••••••••••••••••</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-slate-500 font-semibold text-[11px]">Auth Token:</span>
+              <span className="font-mono text-slate-600 text-[11px] break-all">••••••••••••••••••••••••••••••••</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-semibold">Mittente Predefinito:</span>
-              <span className="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-slate-500 font-semibold text-[11px]">Mittente Predefinito:</span>
+              <span className="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded text-[11px] self-start sm:self-auto">
                 PRISMAL (Alphanumeric Alias)
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-semibold">Stato Account Twilio:</span>
-              <span className="font-bold text-emerald-700 capitalize">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-slate-500 font-semibold text-[11px]">Stato Account Twilio:</span>
+              <span className="font-bold text-emerald-700 capitalize text-[11px] break-words">
                 {status?.twilio?.status || 'active'} ({status?.twilio?.friendlyName || 'My First Twilio Account'})
               </span>
             </div>
@@ -522,17 +522,17 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
       {/* ========================================================= */}
       {/* SECTION 3: SUPABASE LIVE TABLE EXPLORER                   */}
       {/* ========================================================= */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6 max-w-full overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 sm:pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold flex-shrink-0">
               <Table className="w-5 h-5 text-indigo-600" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-black text-slate-900">Supabase Live Tables Explorer</h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  PostgreSQL in Tempo Reale
+                  PostgreSQL Live
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -541,15 +541,15 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <button
               type="button"
               onClick={handleSyncData}
               disabled={isSyncing}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Zap className={`w-3.5 h-3.5 text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Sincronizzazione...' : 'Sincronizza Dati Locali'}</span>
+              <span>{isSyncing ? 'Sincronizzazione...' : 'Sincronizza Dati'}</span>
             </button>
             <button
               type="button"
@@ -558,7 +558,7 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
                 loadAllTableCounts();
               }}
               disabled={isLoadingTable}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
+              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer flex-shrink-0"
               title="Ricarica tabella da Supabase"
             >
               <RefreshCw className={`w-4 h-4 ${isLoadingTable ? 'animate-spin' : ''}`} />
@@ -611,7 +611,7 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
 
         {/* Search bar & Export CSV toolbar inside active table */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 w-full max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -621,18 +621,18 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             <a
               href={`/api/supabase/tables/${selectedTable}/export-csv`}
               download={`${selectedTable}.csv`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex-shrink-0"
               title="Scarica tutti i record di questa tabella in formato CSV"
             >
               <Download className="w-3.5 h-3.5 text-indigo-600" />
               <span>Esporta CSV</span>
             </a>
-            <span className="text-xs text-slate-500">
-              Mostrati <strong>{tableRows.length}</strong> record da Supabase PostgreSQL
+            <span className="text-[11px] sm:text-xs text-slate-500">
+              Mostrati <strong>{tableRows.length}</strong> record
             </span>
           </div>
         </div>
@@ -665,9 +665,13 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto max-h-[480px]">
-              <table className="w-full text-left text-xs border-collapse">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden max-w-full">
+            <div className="px-3 py-1.5 bg-slate-100 border-b border-slate-200 text-[10px] text-slate-600 sm:hidden flex items-center justify-between font-semibold">
+              <span>👉 Scorri orizzontalmente per vedere tutti i dati</span>
+              <span className="font-mono text-indigo-700">{tableRows.length} record</span>
+            </div>
+            <div className="overflow-x-auto max-h-[480px] w-full touch-pan-x">
+              <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                 <thead className="bg-slate-900 text-white sticky top-0 z-10 text-[11px] uppercase tracking-wider">
                   {selectedTable === 'studios' && (
                     <tr>

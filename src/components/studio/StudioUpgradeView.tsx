@@ -360,7 +360,7 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
               Prova PRISMAL Prime gratis per 30 giorni nel tuo studio
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              Collega il tuo account tramite <strong>Stripe Checkout</strong> (Carte di Credito, Apple Pay e Google Pay gestiti a norma bancaria da Stripe) o <strong>PayPal</strong> al conto di Diego Raimondi per attivare la prova con un'autorizzazione temporanea di <strong>0,00€ (nessun addebito oggi)</strong>. Prova per un mese intero tutte le funzioni cliniche e cloud senza alcuna limitazione. Se decidi di proseguire, il canone è di soli <strong>€{PRISMAL_PRIME_PRICE_MONTHLY}/mese</strong> (o <strong>€{PRISMAL_PRIME_PRICE_ANNUAL_MONTHLY}/mese</strong> con fatturazione annuale), disattivabile in qualsiasi momento in 1 click senza penali.
+              Collega il tuo account tramite <strong>Stripe Checkout</strong> (Carte di Credito, Apple Pay e Google Pay gestiti a norma bancaria da Stripe) o <strong>PayPal</strong> al conto aziendale PRISMAL Cloud per attivare la prova con un'autorizzazione temporanea di <strong>0,00€ (nessun addebito oggi)</strong>. Prova per un mese intero tutte le funzioni cliniche e cloud senza alcuna limitazione. Se decidi di proseguire, il canone è di soli <strong>€{PRISMAL_PRIME_PRICE_MONTHLY}/mese</strong> (o <strong>€{PRISMAL_PRIME_PRICE_ANNUAL_MONTHLY}/mese</strong> con fatturazione annuale), disattivabile in qualsiasi momento in 1 click senza penali.
             </p>
 
             {/* Price pill */}
@@ -417,7 +417,7 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
                   </div>
                   <div className="mt-3">
                     <strong className="text-xs block font-bold text-slate-900 leading-tight">Collega con PayPal</strong>
-                    <span className="text-[11px] text-slate-500 block mt-0.5">diegoraimondi7 • 0,00€ oggi</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">prismaldental • 0,00€ oggi</span>
                   </div>
                 </button>
 
