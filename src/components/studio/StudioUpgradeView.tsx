@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { OrbGrid } from '../ui/OrbGrid';
+import { CursorRingField } from '../ui/CursorRingField';
 import {
   PRISMAL_PRIME_CONFIG,
   PRISMAL_PRIME_PRICE_MONTHLY,
@@ -30,6 +32,7 @@ import {
   Globe,
   Building,
   ExternalLink,
+  Settings,
 } from 'lucide-react';
 
 interface StudioUpgradeViewProps {
@@ -46,9 +49,13 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
     platformTransactions,
     cancelStudioSubscription,
     processStudioPayment,
+    confirmStudioStripePayment,
+    verifyCardSetup,
   } = useApp();
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [isVerifyingStripe, setIsVerifyingStripe] = useState(false);
+  const [verificationFeedback, setVerificationFeedback] = useState<string | null>(null);
 
   // Checkout Modal State
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
@@ -82,8 +89,8 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
     setShowCancelModal(false);
     setCancelFeedback(
       trialStatus.isTrialing
-        ? 'Il rinnovo automatico è stato annullato con successo. La prova di 30 giorni rimarrà attiva fino alla naturale scadenza senza alcun addebito futuro.'
-        : 'L\'abbonamento a PRISMAL Prime è stato disdetto. Il servizio resterà regolarmente attivo fino alla data di scadenza della mensilità già saldata.'
+        ? 'Periodo di prova disattivato ed eliminato con successo. Nessun costo o addebito futuro.'
+        : 'L\'abbonamento a PRISMAL Prime è stato disdetto con successo.'
     );
     setTimeout(() => setCancelFeedback(null), 6000);
   };
@@ -92,70 +99,103 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans animate-fade-in">
-      {/* 1. TOP HEADER */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-200">
-            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+      {/* 1. TOP HEADER WITH ORIGINKIT ORBGRID VISUAL */}
+      <div className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-6 sm:p-7 border border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5">
+        {/* Subtle Originkit Orb Canvas Backdrop on Right */}
+        <div className="absolute -right-12 -top-12 w-64 h-64 opacity-30 pointer-events-none sm:pointer-events-auto">
+          <OrbGrid
+            width={260}
+            height={260}
+            density={130}
+            dotSize={115}
+            speed={35}
+            dotColor="#64748b"
+            accentColor="#10b981"
+          />
+        </div>
+
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span>{PRISMAL_PRIME_CONFIG.name}</span>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
             {trialStatus.isPaidActive
               ? 'Gestione Piano & Abbonamento Studio'
+              : trialStatus.isTrialExpired
+              ? 'Abbonamento PRISMAL Prime • Prova Conclusa'
               : trialStatus.isTrialing
               ? 'Gestione Prova & Abbonamento PRISMAL Prime'
               : 'Attiva PRISMAL Prime con 30 Giorni di Prova'}
           </h1>
-          <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
+          <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
             Un unico piano all-inclusive per il tuo studio: zero limiti di appuntamenti o poltrone, triage per pazienti, odontogramma 3D e sincronizzazione cloud.
           </p>
 
-          <div className="pt-1.5">
-            <a
-              href="https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md transition hover:scale-[1.02] cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4 text-emerald-100" />
-              <span>Abbonati / Attiva Piano Ufficiale Stripe (€149/m)</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-            </a>
+          <div className="pt-2 flex items-center gap-2.5 flex-wrap">
+            {!trialStatus.isPaidActive && (
+              <a
+                href={`https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00?client_reference_id=${encodeURIComponent(activeStudio.id)}&prefilled_email=${encodeURIComponent(activeStudio.email || '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all hover:shadow-emerald-500/20 hover:scale-[1.02] cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4 text-slate-950" />
+                <span>Abbonati</span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+              </a>
+            )}
           </div>
+          {verificationFeedback && (
+            <div className="mt-2 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 p-2.5 rounded-xl flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>{verificationFeedback}</span>
+            </div>
+          )}
         </div>
 
         {/* Current status pill */}
-        <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex-shrink-0 text-left md:text-right">
+        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl flex-shrink-0 text-left md:text-right relative z-10">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
             Stato Attuale Studio:
           </span>
           {trialStatus.isPaidActive ? (
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span>PRISMAL Prime Attivo (€{PRISMAL_PRIME_PRICE_MONTHLY}/m)</span>
               </span>
-              <p className="text-[11px] font-semibold text-slate-600">
+              <p className="text-[11px] font-semibold text-slate-400">
                 Prossimo rinnovo: <strong>{trialStatus.renewalDateStr}</strong>
+              </p>
+            </div>
+          ) : trialStatus.isTrialExpired ? (
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                <span>Prova Conclusa</span>
+              </span>
+              <p className="text-[11px] font-semibold text-slate-400">
+                Abbonati per continuare senza limiti
               </p>
             </div>
           ) : trialStatus.isTrialing ? (
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                <Clock className="w-3.5 h-3.5 text-purple-400" />
                 <span>30 Giorni di Prova Attivi</span>
               </span>
-              <p className="text-[11px] font-semibold text-slate-600">
+              <p className="text-[11px] font-semibold text-slate-400">
                 Mancano <strong>{trialStatus.daysRemaining} giorni</strong> gratuiti ({trialStatus.renewalDateStr})
               </p>
             </div>
           ) : (
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
                 <span>Nessuna Carta Connessa</span>
               </span>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-400">
                 Attiva i 30 giorni di prova con verifica a 0,00€
               </p>
             </div>
@@ -171,125 +211,100 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
         </div>
       )}
 
-      {/* 2. CASE A: TRIAL ATTIVO (Gestione Prova in corso) */}
+      {/* 2. CASE A: TRIAL ATTIVO (Gestione Prova in corso - Clean Obsidian Animation) */}
       {trialStatus.isTrialing && (
-        <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/50 rounded-3xl p-6 sm:p-7 border border-amber-200/90 shadow-2xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900">
-                  Giorno {Math.max(1, 30 - trialStatus.daysRemaining)} di 30
+        <div className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6">
+          {/* Subtle Originkit Orb Canvas Backdrop on Right */}
+          <div className="absolute -right-12 -top-12 w-72 h-72 opacity-35 pointer-events-none">
+            <OrbGrid
+              width={280}
+              height={280}
+              density={140}
+              dotSize={110}
+              speed={30}
+              dotColor="#64748b"
+              accentColor="#10b981"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  Prova Gratuita di 30 Giorni Attiva
                 </span>
-                <span className="text-xs font-bold text-amber-900">
-                  Ti rimangono {trialStatus.daysRemaining} giorni di prova a costo zero
+                <span className="text-xs font-bold text-slate-400">
+                  {trialStatus.daysRemaining} giorni rimasti a costo zero
                 </span>
               </div>
-              <h2 className="text-lg font-black text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 La tua prova di 30 giorni è regolarmente in corso
               </h2>
-              <p className="text-xs text-slate-600">
-                Hai collegato la carta <strong>•••• {trialStatus.cardLast4 || '4242'}</strong> con verifica antifrode a 0,00€ (nessuna spesa effettuata).
+              <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
+                Hai collegato la carta <strong>•••• {trialStatus.cardLast4 || '4242'}</strong> con verifica antifrode a 0,00€ (nessuna spesa effettuata). Tutte le funzionalità cliniche, poltrone e agende cloud sono sbloccate al 100%.
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={handleUpgradeImmediate}
-                className="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            <div className="flex items-center gap-3 relative z-10 flex-shrink-0">
+              <a
+                href={`https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00?client_reference_id=${encodeURIComponent(activeStudio.id)}&prefilled_email=${encodeURIComponent(activeStudio.email || '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-7 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-[1.02] flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
-                <span>Attiva Subito PRISMAL Prime (€{PRISMAL_PRIME_PRICE_MONTHLY})</span>
-              </button>
+                <CreditCard className="w-4 h-4 text-slate-950" />
+                <span>Abbonati</span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+              </a>
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="space-y-1.5">
-            <div className="w-full bg-amber-200/80 rounded-full h-2.5 overflow-hidden">
+          {/* Clean Dark Progress bar */}
+          <div className="space-y-2 relative z-10">
+            <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-700/60">
               <div
-                className="bg-amber-600 h-2.5 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(5, ((30 - trialStatus.daysRemaining) / 30) * 100))}%` }}
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                style={{ width: `${Math.min(100, Math.max(8, ((30 - trialStatus.daysRemaining) / 30) * 100))}%` }}
               />
             </div>
-            <div className="flex justify-between text-[11px] text-slate-500 font-medium">
+            <div className="flex justify-between text-[11px] text-slate-400 font-medium">
               <span>Inizio Prova (Verifica 0,00€)</span>
               <span>
                 {trialStatus.cancelAtPeriodEnd
-                  ? 'Rinnovo automatico disattivato (Scadenza senza addebito)'
+                  ? 'Rinnovo disattivato (Scadenza senza addebito)'
                   : `Rinnovo automatico a soli €${PRISMAL_PRIME_PRICE_MONTHLY}/mese il ${trialStatus.renewalDateStr}`}
               </span>
             </div>
           </div>
 
-          {/* Breakdown: cosa è già attivo ora a costo zero vs cosa si attiva al rinnovo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="bg-white p-4 rounded-2xl border border-emerald-200 shadow-2xs space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Attivo Ora nei 30 Giorni di Prova (Costo zero per lo studio e per noi)</span>
-              </div>
-              <ul className="space-y-1.5 text-xs text-slate-600">
-                <li className="flex items-start gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Agenda cloud e prenotazioni pazienti illimitate</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Minisito e triage odontoiatrico guidato</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Odontogramma 3D e piani di trattamento con preventivi</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Sincronizzazione Outlook, Microsoft 365 e Google Calendar</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Regole Smart (sanificazione, slot urgenze, smart waitlist)</span>
-                </li>
-              </ul>
+          {/* Value Props Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 relative z-10">
+            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-slate-300 font-medium">Poltrone & Agenda Illimitate</span>
             </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-purple-200 shadow-2xs space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span>In Attivazione al Rinnovo (Servizi Twilio Telecomunicazioni & Carrier)</span>
-              </div>
-              <ul className="space-y-1.5 text-xs text-slate-600">
-                <li className="flex items-start gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Conferme e promemoria con WhatsApp Business Ufficiale (Twilio Cloud)</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Pacchetto 250 SMS AGCOM/mese con mittente alfanumerico certificato (o Twilio BYOK)</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Centralino telefonico vocale con intelligenza artificiale H24 (Twilio Voice)</span>
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Assistenza prioritaria dedicata diretta con operatore</span>
-                </li>
-              </ul>
+            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-slate-300 font-medium">Odontogramma 3D & Preventivi</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/80 text-xs flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-slate-300 font-medium">Sincronizzazione Cloud & GDPR</span>
             </div>
           </div>
 
-          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-amber-200/80">
-            <span className="text-[11px] text-slate-500">
+          {/* Cancellation footer */}
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800 relative z-10 text-[11px] text-slate-400">
+            <span>
               {trialStatus.cancelAtPeriodEnd
-                ? 'Hai già disattivato il rinnovo automatico. La prova terminerà senza alcuna spesa.'
+                ? 'Rinnovo automatico disattivato. La prova terminerà senza alcuna spesa.'
                 : 'Puoi annullare il rinnovo in qualsiasi momento prima della scadenza con 1 click a zero spese.'}
             </span>
             {!trialStatus.cancelAtPeriodEnd && (
               <button
                 type="button"
                 onClick={() => setShowCancelModal(true)}
-                className="text-xs text-rose-600 hover:text-rose-800 font-semibold underline cursor-pointer"
+                className="text-slate-400 hover:text-rose-400 text-xs font-semibold underline cursor-pointer self-start sm:self-auto transition"
               >
                 Annulla Rinnovo Automatico della Prova
               </button>
@@ -585,11 +600,11 @@ export const StudioUpgradeView: React.FC<StudioUpgradeViewProps> = ({
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">
-                {trialStatus.isTrialing ? 'Annullare il rinnovo della prova?' : 'Disdire l\'abbonamento a PRISMAL Prime?'}
+                {trialStatus.isTrialing ? 'Eliminare e disattivare la prova gratuita?' : 'Disdire l\'abbonamento a PRISMAL Prime?'}
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 {trialStatus.isTrialing
-                  ? `Il rinnovo a €${PRISMAL_PRIME_PRICE_MONTHLY}/mese verrà bloccato. La tua carta non subirà alcun addebito. Potrai continuare a usufruire della prova a costo zero per i giorni restanti.`
+                  ? 'La prova verrà immediatamente terminata ed eliminata. La tua carta non subirà alcun addebito. Potrai riattivare PRISMAL Prime in qualsiasi momento.'
                   : 'Il servizio rimarrà regolarmente attivo fino alla data di scadenza della mensilità in corso e non verrà rinnovato.'}
               </p>
             </div>

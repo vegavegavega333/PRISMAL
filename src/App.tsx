@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { supabase } from './services/supabase';
 import { TopNavigation } from './components/common/TopNavigation';
 import { LandingGate } from './components/common/LandingGate';
 import { SuperAdminDashboard } from './components/admin/SuperAdminDashboard';
@@ -20,6 +21,8 @@ const MainApp: React.FC = () => {
     setCurrentStudioId,
     authSession,
     resolvedTheme,
+    currentStudioId,
+    confirmStudioStripePayment,
   } = useApp();
   const [showFullOnboardingView, setShowFullOnboardingView] = useState(false);
   const [paymentSuccessToast, setPaymentSuccessToast] = useState<string | null>(null);
@@ -30,36 +33,79 @@ const MainApp: React.FC = () => {
 
     // Handle OAuth popup window callback and close automatically
     if (window.opener && (window.location.hash.includes('access_token') || window.location.search.includes('code'))) {
-      try {
-        window.opener.postMessage({ type: 'PRISMAL_OAUTH_SUCCESS' }, '*');
-      } catch (e) {
-        // ignore cross-origin error
-      }
-      setTimeout(() => {
-        try { window.close(); } catch {}
-      }, 700);
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        try {
+          window.opener.postMessage({
+            type: 'PRISMAL_OAUTH_SUCCESS',
+            session,
+            user: session?.user,
+            email: session?.user?.email,
+          }, '*');
+        } catch (e) {
+          // ignore cross-origin error
+        }
+        setTimeout(() => {
+          try { window.close(); } catch {}
+        }, 80);
+      }).catch(() => {
+        try {
+          window.opener.postMessage({ type: 'PRISMAL_OAUTH_SUCCESS' }, '*');
+        } catch {}
+        setTimeout(() => {
+          try { window.close(); } catch {}
+        }, 80);
+      });
     }
 
     const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
+    const sessionId = params.get('session_id') || params.get('sessionId');
     const paymentSuccess = params.get('payment_success');
 
-    if (sessionId && paymentSuccess === 'true') {
-      fetch(`/api/payments/verify-checkout-session?sessionId=${encodeURIComponent(sessionId)}`)
+    if (paymentSuccess === 'true' || sessionId) {
+      const targetId = params.get('studio_id') || params.get('studioId') || currentStudioId || '';
+      fetch(`/api/payments/verify-checkout-session?sessionId=${encodeURIComponent(sessionId || 'stripe-direct-payment')}&studioId=${encodeURIComponent(targetId)}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
             setPaymentSuccessToast(`Pagamento completato con successo su Stripe! Ricevuta ${data.transaction?.invoiceNumber || ''} emessa e PRISMAL Prime attivato.`);
-            // Clean URL query parameters
-            window.history.replaceState({}, document.title, window.location.pathname);
-            setTimeout(() => setPaymentSuccessToast(null), 8000);
+            if (targetId) {
+              confirmStudioStripePayment(targetId);
+            }
+          } else if (targetId) {
+            confirmStudioStripePayment(targetId).then(r => {
+              if (r.success) {
+                setPaymentSuccessToast(`Pagamento completato su Stripe! PRISMAL Prime attivato con successo.`);
+              }
+            });
           }
+          // Clean URL query parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => setPaymentSuccessToast(null), 8000);
         })
         .catch(err => {
           console.warn('Errore verifica sessione Stripe:', err);
+          if (targetId) {
+            confirmStudioStripePayment(targetId);
+          }
         });
     }
-  }, []);
+  }, [currentStudioId]);
+
+  // Dedicated clean, branded loading screen for the OAuth popup window callback (prevents website flashing)
+  const isOAuthPopup = typeof window !== 'undefined' && Boolean(window.opener) && (window.location.hash.includes('access_token') || window.location.search.includes('code'));
+  if (isOAuthPopup) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div className="relative mb-4">
+          <div className="w-12 h-12 rounded-full border-3 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+        </div>
+        <h2 className="text-sm font-bold text-slate-100 tracking-wide">Autenticazione con Google...</h2>
+        <p className="text-xs text-slate-400 mt-1 max-w-xs">
+          Accesso sicuro a PRISMAL completato. Chiusura automatica in corso...
+        </p>
+      </div>
+    );
+  }
 
   // If in landing mode, show the full Landing Gate
   if (currentRole === 'landing') {

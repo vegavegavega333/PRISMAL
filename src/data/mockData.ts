@@ -63,7 +63,7 @@ export const PLAN_PRICING_OPTIONS: PlanPricing[] = [
 export const DEFAULT_VISIT_REASONS: VisitReason[] = [
   {
     id: 'vr-1',
-    name: 'Igiene Orale & Ablazione Tartufo',
+    name: 'Igiene Orale & Ablazione del Tartaro',
     durationMinutes: 45,
     description: 'Pulizia professionale approfondita, lucidatura e controllo gengivale.',
     category: 'hygiene',
@@ -183,37 +183,8 @@ export const DEFAULT_WEEKLY_AVAILABILITY: DayAvailability[] = [
   },
 ];
 
-// Real registered studio on PRISMAL
-export const REAL_STUDIO_PROVA_5: Studio = {
-  id: 'studio-1790169305515',
-  name: 'prova 5',
-  slug: 'prova-5',
-  email: 'vega2fast@gmail.com',
-  password: 'password123',
-  isEmailVerified: true,
-  logoUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=300&auto=format&fit=crop&q=80',
-  phone: '3473100353',
-  address: 'Via Roma 1',
-  city: 'Dello (BS)',
-  status: 'approved_demo',
-  plan: 'demo_free',
-  isSponsored: false,
-  rating: 0,
-  reviewsCount: 0,
-  latitude: 45.4206,
-  longitude: 10.0528,
-  description: 'Studio odontoiatrico all\'avanguardia per igiene, implantologia, ortodonzia e urgenze dentali.',
-  specialties: ['Igiene Orale', 'Impianti', 'Ortodonzia', 'Sbiancamento', 'Urgenze'],
-  demoSlotsTotal: 10,
-  demoSlotsRemaining: 10,
-  createdAt: '2026-09-23T13:15:05.515Z',
-  slotDurationMinutes: 30,
-  weeklyAvailability: DEFAULT_WEEKLY_AVAILABILITY,
-  visitReasons: DEFAULT_VISIT_REASONS,
-  smartBookingRules: DEFAULT_SMART_BOOKING_RULES,
-};
-
-export const INITIAL_STUDIOS: Studio[] = [REAL_STUDIO_PROVA_5];
+// Clean start: No fake mock studios preloaded
+export const INITIAL_STUDIOS: Studio[] = [];
 
 export const INITIAL_APPOINTMENTS: Appointment[] = [];
 

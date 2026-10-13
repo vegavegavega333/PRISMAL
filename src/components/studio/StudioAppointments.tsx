@@ -3,6 +3,10 @@ import { useApp } from '../../context/AppContext';
 import { Appointment, PatientRecord } from '../../types';
 import { PatientClinicalRecordModal } from './PatientClinicalRecordModal';
 import { StudioSendSmsModal } from './StudioSendSmsModal';
+import { EditAppointmentModal } from './EditAppointmentModal';
+import { StudioReminderModal } from './StudioReminderModal';
+import { getStudioChairs } from '../../data/defaultChairs';
+import { formatPatientFullName } from './StudioMultiChairsView';
 import {
   Calendar,
   List,
@@ -23,10 +27,23 @@ import {
   Sparkles,
   ArrowRight,
   HeartPulse,
+  Edit3,
+  Bell,
 } from 'lucide-react';
 
 export const StudioAppointments: React.FC = () => {
-  const { activeStudio, appointments, updateAppointmentStatus, patientRecords, savePatientRecord } = useApp();
+  const {
+    activeStudio,
+    appointments,
+    updateAppointmentStatus,
+    updateAppointmentDetails,
+    deleteAppointment,
+    patientRecords,
+    savePatientRecord,
+  } = useApp();
+
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [reminderModalAppointment, setReminderModalAppointment] = useState<Appointment | null>(null);
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'in_progress' | 'completed'>('all');
@@ -135,7 +152,7 @@ export const StudioAppointments: React.FC = () => {
 
   const handleConfirmAppointment = (apt: Appointment) => {
     updateAppointmentStatus(apt.id, 'confirmed');
-    setToastMessage(`Visita con ${apt.patientFirstName} ${apt.patientLastName} confermata con successo! Ora è inserita nel calendario.`);
+    setToastMessage(`Visita con ${formatPatientFullName(apt.patientFirstName, apt.patientLastName)} confermata con successo! Ora è inserita nel calendario.`);
     setTimeout(() => setToastMessage(null), 5000);
   };
 
@@ -407,7 +424,7 @@ export const StudioAppointments: React.FC = () => {
                             {apt.code}
                           </span>
                           <h3 className="text-base font-bold text-slate-900">
-                            {apt.patientFirstName} {apt.patientLastName}
+                            {formatPatientFullName(apt.patientFirstName, apt.patientLastName)}
                           </h3>
                           {getStatusBadge(apt.status)}
                         </div>
@@ -518,15 +535,26 @@ export const StudioAppointments: React.FC = () => {
                         <span>Cartella Clinica</span>
                       </button>
 
-                      {/* Invia SMS Twilio Diretto */}
+                      {/* Modifica Seduta Clinica */}
                       <button
                         type="button"
-                        onClick={() => setSmsModalAppointment(apt)}
-                        title="Invia SMS diretto con Twilio (Promemoria, conferma o urgenza)"
-                        className="px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 transition ml-1 flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
+                        onClick={() => setEditingAppointment(apt)}
+                        className="px-2.5 py-1.5 rounded-xl border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
+                        title="Modifica dettagli, durata o poltrona della seduta"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 text-rose-600" />
-                        <span>SMS Twilio</span>
+                        <Edit3 className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Modifica</span>
+                      </button>
+
+                      {/* Invia Reminder Email o WhatsApp */}
+                      <button
+                        type="button"
+                        onClick={() => setReminderModalAppointment(apt)}
+                        title="Invia Promemoria Email o WhatsApp al paziente"
+                        className="px-2.5 py-1.5 rounded-xl border border-emerald-200 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
+                      >
+                        <Bell className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Reminder</span>
                       </button>
 
                       <a
@@ -610,6 +638,30 @@ export const StudioAppointments: React.FC = () => {
             savePatientRecord(updated);
             setSelectedClinicalPatient(updated);
           }}
+        />
+      )}
+
+      {/* Modifica Seduta Clinica Modal */}
+      {editingAppointment && (
+        <EditAppointmentModal
+          isOpen={Boolean(editingAppointment)}
+          onClose={() => setEditingAppointment(null)}
+          appointment={editingAppointment}
+          chairs={getStudioChairs(activeStudio.id)}
+          onSave={updateAppointmentDetails}
+          onDelete={deleteAppointment}
+          onOpenClinicalRecord={handleOpenClinicalRecord}
+          onOpenReminder={apt => setReminderModalAppointment(apt)}
+        />
+      )}
+
+      {/* Unified Reminder Modal (Email, WhatsApp, SMS) */}
+      {reminderModalAppointment && (
+        <StudioReminderModal
+          isOpen={Boolean(reminderModalAppointment)}
+          onClose={() => setReminderModalAppointment(null)}
+          appointment={reminderModalAppointment}
+          studioName={activeStudio.name}
         />
       )}
 

@@ -3,7 +3,10 @@ import { useApp } from '../../context/AppContext';
 import { Appointment, PatientRecord } from '../../types';
 import { PatientClinicalRecordModal } from './PatientClinicalRecordModal';
 import { StudioSendSmsModal } from './StudioSendSmsModal';
-import { StudioMultiChairsView } from './StudioMultiChairsView';
+import { EditAppointmentModal } from './EditAppointmentModal';
+import { StudioReminderModal } from './StudioReminderModal';
+import { StudioMultiChairsView, formatPatientFullName } from './StudioMultiChairsView';
+import { getStudioChairs } from '../../data/defaultChairs';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -30,6 +33,8 @@ import {
   Flame,
   Smartphone,
   Layers,
+  Edit3,
+  Bell,
 } from 'lucide-react';
 
 export const StudioVisualCalendar: React.FC = () => {
@@ -38,6 +43,8 @@ export const StudioVisualCalendar: React.FC = () => {
     appointments,
     blockedSlots,
     updateAppointmentStatus,
+    updateAppointmentDetails,
+    deleteAppointment,
     blockSingleSlot,
     unblockSlot,
     isDayBlocked,
@@ -63,8 +70,12 @@ export const StudioVisualCalendar: React.FC = () => {
   // Active patient modal for Cartella Clinica & Odontogramma
   const [selectedClinicalPatient, setSelectedClinicalPatient] = useState<PatientRecord | null>(null);
 
-  // SMS Modal State
+  // Edit Appointment and Reminder modals state
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [reminderModalAppointment, setReminderModalAppointment] = useState<Appointment | null>(null);
   const [smsModalAppointment, setSmsModalAppointment] = useState<Appointment | null>(null);
+
+  const chairs = useMemo(() => getStudioChairs(activeStudio?.id || ''), [activeStudio?.id]);
 
   // New quick-add appointment modal state
   const [quickAddSlot, setQuickAddSlot] = useState<string | null>(null);
@@ -505,7 +516,7 @@ export const StudioVisualCalendar: React.FC = () => {
               >
                 <div>
                   <div className="text-xs font-bold text-slate-900">
-                    {apt.patientFirstName} {apt.patientLastName}
+                    {formatPatientFullName(apt.patientFirstName, apt.patientLastName)}
                   </div>
                   <div className="text-[11px] text-slate-500 tabular-nums">
                     {apt.date} • {apt.timeSlot} ({apt.visitReasonName})
@@ -1169,7 +1180,7 @@ export const StudioVisualCalendar: React.FC = () => {
 
                       <div className="mt-2.5">
                         <h5 className="text-sm font-bold text-slate-900">
-                          {apt.patientFirstName} {apt.patientLastName}
+                          {formatPatientFullName(apt.patientFirstName, apt.patientLastName)}
                         </h5>
                         <p className="text-xs text-slate-600 font-medium mt-0.5">
                           {apt.visitReasonName}
@@ -1291,7 +1302,7 @@ export const StudioVisualCalendar: React.FC = () => {
 
                         <div className="mt-2.5">
                           <h4 className="text-xs font-bold text-slate-900 truncate">
-                            {appointment.patientFirstName} {appointment.patientLastName}
+                            {formatPatientFullName(appointment.patientFirstName, appointment.patientLastName)}
                           </h4>
                           <p className="text-[11px] text-slate-600 mt-0.5 truncate">
                             {appointment.visitReasonName}
@@ -1334,12 +1345,21 @@ export const StudioVisualCalendar: React.FC = () => {
                         </a>
                         <button
                           type="button"
-                          onClick={() => setSmsModalAppointment(appointment)}
+                          onClick={() => setEditingAppointment(appointment)}
                           className="px-2 py-1 rounded-lg text-[11px] font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition flex items-center gap-1 cursor-pointer"
-                          title="Invia SMS istantaneo al paziente con Twilio"
+                          title="Modifica dettagli, durata o poltrona"
                         >
-                          <Smartphone className="w-3 h-3 text-purple-600" />
-                          <span>SMS</span>
+                          <Edit3 className="w-3 h-3 text-purple-600" />
+                          <span>Modifica</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReminderModalAppointment(appointment)}
+                          className="px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1 cursor-pointer"
+                          title="Invia Reminder Email o WhatsApp"
+                        >
+                          <Bell className="w-3 h-3 text-emerald-600" />
+                          <span>Reminder</span>
                         </button>
                       </div>
                     </div>
@@ -1368,7 +1388,7 @@ export const StudioVisualCalendar: React.FC = () => {
 
                         <div className="mt-2.5">
                           <h4 className="text-xs font-bold text-slate-900 truncate">
-                            {appointment.patientFirstName} {appointment.patientLastName}
+                            {formatPatientFullName(appointment.patientFirstName, appointment.patientLastName)}
                           </h4>
                           <p className="text-[11px] text-amber-900 mt-0.5 truncate">
                             {appointment.visitReasonName}
@@ -1517,7 +1537,7 @@ export const StudioVisualCalendar: React.FC = () => {
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
                           <div className="truncate">
                             <span className="text-xs sm:text-sm font-bold text-slate-900">
-                              {appointment.patientFirstName} {appointment.patientLastName}
+                              {formatPatientFullName(appointment.patientFirstName, appointment.patientLastName)}
                             </span>
                             <span className="text-xs text-slate-500 ml-2 hidden sm:inline">
                               — {appointment.visitReasonName}
@@ -1531,7 +1551,7 @@ export const StudioVisualCalendar: React.FC = () => {
                           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
                           <div className="truncate">
                             <span className="text-xs sm:text-sm font-bold text-amber-950">
-                              {appointment.patientFirstName} {appointment.patientLastName}
+                              {formatPatientFullName(appointment.patientFirstName, appointment.patientLastName)}
                             </span>
                             <span className="text-xs text-amber-800 ml-2 font-semibold">
                               (In attesa di conferma)
@@ -1583,12 +1603,21 @@ export const StudioVisualCalendar: React.FC = () => {
                           </a>
                           <button
                             type="button"
-                            onClick={() => setSmsModalAppointment(appointment)}
+                            onClick={() => setEditingAppointment(appointment)}
                             className="px-2.5 py-1 rounded-lg text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition flex items-center gap-1 cursor-pointer"
-                            title="Invia SMS istantaneo al paziente con Twilio"
+                            title="Modifica dettagli, durata o poltrona"
                           >
-                            <Smartphone className="w-3.5 h-3.5 text-purple-600" />
-                            <span className="hidden sm:inline">SMS</span>
+                            <Edit3 className="w-3.5 h-3.5 text-purple-600" />
+                            <span className="hidden sm:inline">Modifica</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setReminderModalAppointment(appointment)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1 cursor-pointer"
+                            title="Invia Reminder Email o WhatsApp"
+                          >
+                            <Bell className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">Reminder</span>
                           </button>
                         </>
                       )}
@@ -1771,7 +1800,7 @@ export const StudioVisualCalendar: React.FC = () => {
                     ? activeStudio.visitReasons
                     : [
                         { id: 'vr-1', name: 'Prima Visita Odontoiatrica & Check-up' },
-                        { id: 'vr-2', name: 'Igiene Orale & Ablazione Tartufo' },
+                        { id: 'vr-2', name: 'Igiene Orale & Ablazione del Tartaro' },
                         { id: 'vr-3', name: 'Controllo Periodico' },
                         { id: 'vr-4', name: 'Urgenza Odontoiatrica' },
                       ]
@@ -1857,7 +1886,31 @@ export const StudioVisualCalendar: React.FC = () => {
         />
       )}
 
-      {/* Twilio SMS Dispatch Modal */}
+      {/* Modifica Seduta in Poltrona / Calendario Modal */}
+      {editingAppointment && (
+        <EditAppointmentModal
+          isOpen={Boolean(editingAppointment)}
+          onClose={() => setEditingAppointment(null)}
+          appointment={editingAppointment}
+          chairs={chairs}
+          onSave={updateAppointmentDetails}
+          onDelete={deleteAppointment}
+          onOpenClinicalRecord={handleOpenClinicalRecord}
+          onOpenReminder={apt => setReminderModalAppointment(apt)}
+        />
+      )}
+
+      {/* Unified Reminder Modal (Email, WhatsApp, SMS) */}
+      {reminderModalAppointment && (
+        <StudioReminderModal
+          isOpen={Boolean(reminderModalAppointment)}
+          onClose={() => setReminderModalAppointment(null)}
+          appointment={reminderModalAppointment}
+          studioName={activeStudio?.name}
+        />
+      )}
+
+      {/* Twilio SMS Dispatch Modal (Legacy fallback) */}
       {smsModalAppointment && (
         <StudioSendSmsModal
           isOpen={Boolean(smsModalAppointment)}

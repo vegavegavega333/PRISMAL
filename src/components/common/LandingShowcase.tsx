@@ -112,12 +112,12 @@ export const LandingShowcase: React.FC<LandingShowcaseProps> = ({
           </nav>
 
           {/* Action CTAs */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               id="landing-header-login-btn"
               type="button"
               onClick={onOpenAuthModal}
-              className="px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 rounded-xl transition"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-2xs cursor-pointer"
             >
               Accedi
             </button>
@@ -125,10 +125,11 @@ export const LandingShowcase: React.FC<LandingShowcaseProps> = ({
               id="landing-header-register-btn"
               type="button"
               onClick={onStartRegistration}
-              className="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-[0.98] rounded-xl transition shadow-sm flex items-center gap-1.5"
+              className="px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 active:scale-[0.98] rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Registra Studio</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Registra Studio</span>
+              <span className="xs:hidden">Registrati</span>
+              <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
             </button>
           </div>
         </div>

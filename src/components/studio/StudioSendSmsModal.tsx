@@ -24,6 +24,15 @@ interface StudioSendSmsModalProps {
   onSmsSent?: (result: { messageId?: string; recipient: string; text: string }) => void;
 }
 
+function cleanMessageDeduplication(text: string): string {
+  return text
+    .replace(/\bdello\s+dello\b/gi, 'dello')
+    .replace(/\bdi\s+di\b/gi, 'di')
+    .replace(/\blo\s+lo\b/gi, 'lo')
+    .replace(/\bdel\s+del\b/gi, 'del')
+    .replace(/\bin\s+in\b/gi, 'in');
+}
+
 export const StudioSendSmsModal: React.FC<StudioSendSmsModalProps> = ({
   isOpen,
   onClose,
@@ -58,22 +67,30 @@ export const StudioSendSmsModal: React.FC<StudioSendSmsModalProps> = ({
     switch (selectedTemplate) {
       case 'reminder':
         setMessageText(
-          `PRISMAL: Gentile ${targetPatientName}, le ricordiamo la visita (${reasonStr}) presso ${studioName} il ${dateStr} alle ore ${timeStr}. Per info o variazioni contatti lo studio.`
+          cleanMessageDeduplication(
+            `PRISMAL: Gentile ${targetPatientName}, le ricordiamo la visita (${reasonStr}) presso ${studioName} il ${dateStr} alle ore ${timeStr}. Per info o variazioni contatti lo studio.`
+          )
         );
         break;
       case 'confirmation_request':
         setMessageText(
-          `PRISMAL: Gentile ${targetPatientName}, la preghiamo di confermare la sua presenza alla visita del ${dateStr} ore ${timeStr} presso ${studioName}. Risponda a questo SMS per confermare.`
+          cleanMessageDeduplication(
+            `PRISMAL: Gentile ${targetPatientName}, la preghiamo di confermare la sua presenza alla visita del ${dateStr} ore ${timeStr} presso ${studioName}. Risponda per confermare.`
+          )
         );
         break;
       case 'emergency':
         setMessageText(
-          `PRISMAL: Gentile ${targetPatientName}, la sua richiesta di urgenza è stata registrata presso ${studioName}. La aspettiamo il ${dateStr} alle ore ${timeStr}.`
+          cleanMessageDeduplication(
+            `PRISMAL: Gentile ${targetPatientName}, la sua richiesta di urgenza è stata registrata presso ${studioName}. La aspettiamo il ${dateStr} alle ore ${timeStr}.`
+          )
         );
         break;
       case 'post_visit':
         setMessageText(
-          `PRISMAL: Gentile ${targetPatientName}, grazie per la visita presso ${studioName}. Per qualsiasi necessità post-trattamento o dubbio rimaniamo a sua completa disposizione.`
+          cleanMessageDeduplication(
+            `PRISMAL: Gentile ${targetPatientName}, grazie per la visita presso ${studioName}. Per qualsiasi necessità post-trattamento o dubbio rimaniamo a sua completa disposizione.`
+          )
         );
         break;
       case 'custom':

@@ -21,6 +21,7 @@ import {
   Send,
   Radio,
   CreditCard,
+  RotateCcw,
 } from 'lucide-react';
 import { PlanType, Studio } from '../../types';
 import { PRISMAL_PRIME_PRICE_MONTHLY } from '../../data/planTierDefinitions';
@@ -43,6 +44,7 @@ export const SuperAdminDashboard: React.FC = () => {
     setCurrentStudioId,
     setPatientViewingSlug,
     completeOnboarding,
+    resetAllData,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'studios' | 'communication_log' | 'payments' | 'sponsorship' | 'supabase_twilio'>('studios');
@@ -124,14 +126,29 @@ export const SuperAdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Action button */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+          <button
+            onClick={() => {
+              if (window.confirm('Confermi di voler azzerare tutte le visite, transazioni e dati di test per lasciare la piattaforma al 100% pulita in modalità template?')) {
+                resetAllData();
+                setDeleteToast('Tutte le visite e i dati fittizi sono stati azzerati con successo!');
+                setTimeout(() => setDeleteToast(null), 4000);
+              }
+            }}
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Azzera tutte le prenotazioni, transazioni e dati di test"
+          >
+            <RotateCcw className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate">Azzera Dati Visite (Reset 100%)</span>
+          </button>
+
           {activeTab === 'studios' && (
             <button
               onClick={() => setShowAddStudioModal(true)}
-              className="w-full sm:w-auto px-3.5 sm:px-4 py-2 sm:py-2.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 flex-shrink-0" />
               <span>Nuovo Studio Manuale</span>
             </button>
           )}
@@ -139,30 +156,30 @@ export const SuperAdminDashboard: React.FC = () => {
       </div>
 
       {/* Main Module Tabs Switcher - Horizontal scroll on mobile */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mt-4 sm:mt-6 pb-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap -mx-3 px-3 sm:mx-0 sm:px-0 touch-pan-x">
+      <div className="flex items-center gap-2.5 sm:gap-3 border-b border-slate-200 mt-4 sm:mt-6 pb-2.5 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap -mx-3 px-3 sm:mx-0 sm:px-0 touch-pan-x">
         <button
           id="tab-studios"
           onClick={() => setActiveTab('studios')}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition ${
             activeTab === 'studios'
-              ? 'bg-purple-700 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'bg-purple-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
           }`}
         >
-          <Building2 className="w-4 h-4" />
+          <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
           <span>Studi Odontoiatrici ({totalStudios})</span>
         </button>
 
         <button
           id="tab-communication-log"
           onClick={() => setActiveTab('communication_log')}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition relative ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition relative ${
             activeTab === 'communication_log'
-              ? 'bg-purple-700 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'bg-purple-700 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
           }`}
         >
-          <Mail className="w-4 h-4" />
+          <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
           <span>Communication Log</span>
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -173,39 +190,39 @@ export const SuperAdminDashboard: React.FC = () => {
         <button
           id="tab-payments"
           onClick={() => setActiveTab('payments')}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition ${
             activeTab === 'payments'
-              ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm'
-              : 'text-purple-700 hover:text-purple-900 bg-purple-50/70'
+              ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-xs'
+              : 'text-purple-700 hover:text-purple-900 bg-purple-50/70 border border-purple-200/50'
           }`}
         >
-          <CreditCard className="w-4 h-4" />
+          <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
           <span>Incassi & Gateway Pagamenti</span>
         </button>
 
         <button
           id="tab-sponsorship"
           onClick={() => setActiveTab('sponsorship')}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition ${
             activeTab === 'sponsorship'
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-sm'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-xs'
               : 'text-amber-800 hover:text-amber-950 bg-amber-50/80 border border-amber-200/70'
           }`}
         >
-          <Sparkles className="w-4 h-4 text-amber-500" />
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0" />
           <span>Sponsorizzazioni & Top Rank</span>
         </button>
 
         <button
           id="tab-supabase-twilio"
           onClick={() => setActiveTab('supabase_twilio')}
-          className={`flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition ${
+          className={`flex-shrink-0 flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition ${
             activeTab === 'supabase_twilio'
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm'
+              ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs'
               : 'text-emerald-800 hover:text-emerald-950 bg-emerald-50/80 border border-emerald-200/70'
           }`}
         >
-          <Zap className="w-4 h-4 text-emerald-500" />
+          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
           <span>Supabase & Twilio Cloud</span>
         </button>
       </div>

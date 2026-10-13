@@ -142,3 +142,76 @@ export async function getTwilioAccountDetails() {
     return { configured: false, error: err?.message || 'Errore connessione Twilio' };
   }
 }
+
+/**
+ * Sends a real WhatsApp message via Twilio WhatsApp API
+ */
+export async function sendTwilioWhatsApp(to: string, body: string, customFrom?: string): Promise<TwilioSendResult> {
+  const accountSid = (process.env.TWILIO_ACCOUNT_SID || 'AC6f93f426d54226c3df72d97f8783e27d').trim();
+  const authToken = (process.env.TWILIO_AUTH_TOKEN || 'c858347a68e8a07db529d523a01a5926').trim();
+  const rawFrom = customFrom || process.env.TWILIO_WHATSAPP_FROM || '+14155238886';
+  const from = rawFrom.startsWith('whatsapp:') ? rawFrom : `whatsapp:${rawFrom}`;
+
+  if (!accountSid || !authToken) {
+    return {
+      success: false,
+      error: 'Credenziali Twilio WhatsApp non configurate',
+      status: 'missing_credentials',
+    };
+  }
+
+  const formattedTo = formatPhoneNumberE164(to);
+  if (!formattedTo || formattedTo.length < 8) {
+    return {
+      success: false,
+      error: `Numero destinatario non valido: ${to}`,
+      status: 'invalid_recipient',
+    };
+  }
+
+  const waTo = `whatsapp:${formattedTo}`;
+  const authHeader = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+  const params = new URLSearchParams();
+  params.append('To', waTo);
+  params.append('From', from);
+  params.append('Body', body);
+
+  try {
+    const res = await fetch(twilioUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      return {
+        success: true,
+        messageId: data.sid,
+        status: data.status || 'sent',
+      };
+    } else {
+      console.warn('[Twilio WhatsApp Error]:', data.code, data.message);
+      return {
+        success: false,
+        code: data.code,
+        error: data.message || `Errore Twilio WhatsApp HTTP ${res.status}`,
+        status: 'failed',
+      };
+    }
+  } catch (err: any) {
+    console.error('[Twilio WhatsApp Network Error]:', err);
+    return {
+      success: false,
+      error: err?.message || 'Errore di rete durante invio WhatsApp via Twilio',
+      status: 'network_error',
+    };
+  }
+}
+

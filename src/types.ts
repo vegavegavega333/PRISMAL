@@ -54,12 +54,14 @@ export interface AddonSlotPackage {
 }
 
 export interface StudioSubscription {
-  status: 'active' | 'trialing' | 'past_due' | 'cancelled' | 'unpaid';
+  status: 'active' | 'trialing' | 'past_due' | 'cancelled' | 'unpaid' | 'expired';
   planId: PlanType;
   billingCycle: 'monthly' | 'annual';
   currentPeriodStart: string; // ISO date
   currentPeriodEnd: string; // ISO date
   cancelAtPeriodEnd: boolean;
+  cardSetupVerified?: boolean;
+  cardVerificationError?: string;
   paymentMethod?: 'stripe' | 'credit_card' | 'google_pay' | 'paypal' | 'bank_transfer';
   paymentMethodDetails?: {
     brand?: string;

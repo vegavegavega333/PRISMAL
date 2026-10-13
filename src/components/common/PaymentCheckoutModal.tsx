@@ -363,10 +363,23 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const res = await fetch(`/api/payments/verify-checkout-session?session_id=${encodeURIComponent(sId)}`);
+      const res = await fetch(`/api/payments/verify-checkout-session?session_id=${encodeURIComponent(sId)}&studioId=${encodeURIComponent(currentStudio.id)}`);
       const data = await res.json();
 
       if (!data.success || !data.transaction) {
+        // Fallback: verify and activate directly via backend confirm-stripe-payment endpoint
+        const confirmRes = await fetch('/api/payments/confirm-stripe-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studioId: currentStudio.id, sessionId: sId, billingCycle }),
+        });
+        const confirmData = await confirmRes.json();
+        if (confirmData.success && confirmData.transaction) {
+          setCompletedTransaction(confirmData.transaction);
+          if (onPaymentSuccess) onPaymentSuccess(confirmData.transaction);
+          return;
+        }
+
         setErrorMessage(data.message || data.error || 'La sessione non risulta completata o pagata su Stripe. Il piano non è stato attivato.');
         return;
       }

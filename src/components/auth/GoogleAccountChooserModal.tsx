@@ -11,22 +11,7 @@ export interface GoogleAccount {
 
 const STORAGE_KEY = 'prismal_saved_google_accounts';
 
-const DEFAULT_ACCOUNTS: GoogleAccount[] = [
-  {
-    email: 'prismaldental@gmail.com',
-    name: 'PRISMAL Dental (Super Admin)',
-    avatarLetter: 'P',
-    bgColor: 'bg-purple-700',
-    isPrimary: true,
-  },
-  {
-    email: 'admin@prismal.app',
-    name: 'PRISMAL Platform Administrator',
-    avatarLetter: 'A',
-    bgColor: 'bg-slate-700',
-    isPrimary: false,
-  },
-];
+const DEFAULT_ACCOUNTS: GoogleAccount[] = [];
 
 interface GoogleAccountChooserModalProps {
   isOpen: boolean;
@@ -48,10 +33,12 @@ export const GoogleAccountChooserModal: React.FC<GoogleAccountChooserModalProps>
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch {}
-    return DEFAULT_ACCOUNTS;
+    return [];
   });
 
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
@@ -65,7 +52,7 @@ export const GoogleAccountChooserModal: React.FC<GoogleAccountChooserModalProps>
   // Always reset to account list view whenever opened
   useEffect(() => {
     if (isOpen) {
-      setShowAddAccount(false);
+      setShowAddAccount(accounts.length === 0);
       setSelectedEmail(null);
       setIsAuthenticating(false);
       setIsExternalWindowOpen(false);
@@ -73,7 +60,7 @@ export const GoogleAccountChooserModal: React.FC<GoogleAccountChooserModalProps>
       setCustomEmail('');
       setCustomName('');
     }
-  }, [isOpen]);
+  }, [isOpen, accounts.length]);
 
   if (!isOpen) return null;
 

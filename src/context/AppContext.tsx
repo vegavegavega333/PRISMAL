@@ -42,11 +42,15 @@ import {
   subscribeToStudios,
   saveAppointmentToFirestore,
   updateAppointmentStatusInFirestore,
+  deleteAppointmentFromFirestore,
+  clearAllAppointmentsFromFirestore,
   subscribeToAppointments,
   saveBlockedSlotToFirestore,
   deleteBlockedSlotFromFirestore,
+  clearAllBlockedSlotsFromFirestore,
   subscribeToBlockedSlots,
   savePatientRecordToFirestore,
+  clearAllPatientRecordsFromFirestore,
   subscribeToPatientRecords,
   updateStudioInFirestore,
   saveSuperAdminPaymentConfigToFirestore,
@@ -166,6 +170,8 @@ interface AppContextType {
   updateWeeklyAvailability: (studioId: string, availability: DayAvailability[]) => void;
   updateStudioSmartRules: (studioId: string, rules: Partial<SmartBookingRules>) => void;
   updateAppointmentStatus: (appointmentId: string, status: Appointment['status']) => void;
+  updateAppointmentDetails: (appointmentId: string, updates: Partial<Appointment>) => void;
+  deleteAppointment: (appointmentId: string) => void;
   upgradeStudioPlan: (studioId: string, plan: PlanType) => void;
 
   // Blocked slots & calendar management
@@ -242,6 +248,9 @@ interface AppContextType {
     notes?: string;
   }) => Promise<PlatformTransaction>;
   approvePendingTransaction: (txId: string) => void;
+  confirmStudioStripePayment: (studioId: string, billingCycle?: 'monthly' | 'annual') => Promise<{ success: boolean; studio?: Studio; transaction?: any; error?: string }>;
+  verifyCardSetup: (studioId: string, cardBrand?: string, cardLast4?: string, success?: boolean, errorReason?: string) => Promise<{ success: boolean; studio?: Studio; error?: string }>;
+  simulateTrialRenewal: (studioId: string, outcome: 'success' | 'failure') => Promise<{ success: boolean; studio?: Studio; message?: string; error?: string }>;
   cancelStudioSubscription: (studioId: string) => void;
   deletePlatformTransaction: (txId: string) => Promise<void>;
   clearAllPlatformTransactions: () => Promise<void>;
@@ -264,17 +273,122 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const FAKE_STUDIO_IDS = new Set(['studio-demo-1', 'studio-roma-1', 'studio-torino-1', 'studio-bologna-1']);
+const DELETED_STUDIOS_STORAGE_KEY = 'prismal_deleted_studio_ids';
+const DELETED_STUDIO_EMAILS_STORAGE_KEY = 'prismal_deleted_studio_emails';
+
+export const getDeletedStudioIds = (): Set<string> => {
+  try {
+    const saved = localStorage.getItem(DELETED_STUDIOS_STORAGE_KEY);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+};
+
+export const getDeletedStudioEmails = (): Set<string> => {
+  try {
+    const saved = localStorage.getItem(DELETED_STUDIO_EMAILS_STORAGE_KEY);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      if (Array.isArray(arr)) return new Set(arr.map(e => String(e).toLowerCase().trim()));
+    }
+  } catch {}
+  return new Set();
+};
+
+export const markStudioAsDeleted = (id: string, email?: string) => {
+  try {
+    const ids = getDeletedStudioIds();
+    ids.add(id);
+    localStorage.setItem(DELETED_STUDIOS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+    if (email) {
+      const emails = getDeletedStudioEmails();
+      emails.add(email.toLowerCase().trim());
+      localStorage.setItem(DELETED_STUDIO_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
+    }
+  } catch {}
+};
+
+export const unmarkStudioAsDeleted = (id: string, email?: string) => {
+  try {
+    const ids = getDeletedStudioIds();
+    ids.delete(id);
+    localStorage.setItem(DELETED_STUDIOS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+    if (email) {
+      const emails = getDeletedStudioEmails();
+      emails.delete(email.toLowerCase().trim());
+      localStorage.setItem(DELETED_STUDIO_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
+    }
+  } catch {}
+};
+
+export const sanitizeStudioData = (s: Studio): Studio => {
+  if (!s) return s;
+  const fixText = (t: string) =>
+    (t || '')
+      .replace(/Ablazione\s+Tartufo/gi, 'Ablazione del Tartaro')
+      .replace(/tartufo/gi, 'tartaro');
+
+  const visitReasons = Array.isArray(s.visitReasons)
+    ? s.visitReasons.map(vr => ({
+        ...vr,
+        name: fixText(vr.name),
+        description: fixText(vr.description || ''),
+      }))
+    : s.visitReasons;
+
+  const specialties = Array.isArray(s.specialties)
+    ? s.specialties.map(fixText)
+    : s.specialties;
+
+  return {
+    ...s,
+    visitReasons,
+    specialties,
+  };
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // One-time automatic clean reset for template mode: purge all test data (Marco Copez, Diego Raimondi, Dello Dello, etc.)
+  const RESET_VERSION_KEY = 'prismal_clean_template_v4';
+  if (typeof window !== 'undefined' && localStorage.getItem(RESET_VERSION_KEY) !== 'true') {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
+      localStorage.removeItem(STORAGE_KEYS.BLOCKED_SLOTS);
+      localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+      localStorage.removeItem(STORAGE_KEYS.PATIENT_RECORDS);
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+      localStorage.removeItem('prismal_search_logs_v1');
+      localStorage.setItem(RESET_VERSION_KEY, 'true');
+      fetch('/api/admin/reset-data', { method: 'POST' }).catch(() => {});
+      clearAllAppointmentsFromFirestore().catch(() => {});
+      clearAllBlockedSlotsFromFirestore().catch(() => {});
+      clearAllPatientRecordsFromFirestore().catch(() => {});
+      clearAllPlatformTransactionsFromFirestore().catch(() => {});
+    } catch {}
+  }
   const [studios, setStudios] = useState<Studio[]>(() => {
     try {
+      const deletedIds = getDeletedStudioIds();
+      const deletedEmails = getDeletedStudioEmails();
       const saved = localStorage.getItem(STORAGE_KEYS.STUDIOS);
-      const parsed: Studio[] = saved ? JSON.parse(saved) : INITIAL_STUDIOS;
-      // Filter out all fake demo studios and strictly deduplicate by id, email, phone
-      const filtered = deduplicateStudios(parsed.filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !s.name.toLowerCase().includes('demo')));
-      return filtered.length > 0 ? filtered : INITIAL_STUDIOS;
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.map(sanitizeStudioData);
+          try {
+            localStorage.setItem(STORAGE_KEYS.STUDIOS, JSON.stringify(sanitized));
+          } catch {}
+          return deduplicateStudios(
+            sanitized.filter(s => s && s.id && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim())) && !s.name.toLowerCase().includes('demo'))
+          );
+        }
+      }
+      return INITIAL_STUDIOS.map(sanitizeStudioData).filter(s => s && s.id && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim())));
     } catch {
-      return INITIAL_STUDIOS;
+      return [];
     }
   });
 
@@ -608,21 +722,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Subscribe to Firestore Studios collection
     const unsubStudios = subscribeToStudios(firestoreStudios => {
+      const deletedIds = getDeletedStudioIds();
+      const deletedEmails = getDeletedStudioEmails();
       if (firestoreStudios && firestoreStudios.length > 0) {
         setStudios(prev => {
           const map = new Map<string, Studio>();
-          prev.filter(s => s && !FAKE_STUDIO_IDS.has(s.id)).forEach(s => map.set(s.id, s));
-          firestoreStudios.filter(fs => fs && !FAKE_STUDIO_IDS.has(fs.id)).forEach(fs => {
+          prev.filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim()))).forEach(s => map.set(s.id, s));
+          firestoreStudios.filter(fs => fs && !FAKE_STUDIO_IDS.has(fs.id) && !deletedIds.has(fs.id) && !(fs.email && deletedEmails.has(fs.email.toLowerCase().trim()))).forEach(fs => {
             const local = map.get(fs.id);
             map.set(fs.id, local ? { ...local, ...fs } : fs);
           });
-          const result = deduplicateStudios(Array.from(map.values()).filter(s => s && !FAKE_STUDIO_IDS.has(s.id)));
-          return result.length > 0 ? result : INITIAL_STUDIOS;
-        });
-      } else {
-        // If Firestore has no studios yet, seed initial active studios into Firestore
-        INITIAL_STUDIOS.forEach(s => {
-          saveStudioToFirestore(s).catch(() => {});
+          const result = deduplicateStudios(Array.from(map.values()).filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim()))));
+          return result;
         });
       }
     });
@@ -681,9 +792,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const remoteStudios: Studio[] = await res.json();
           let merged: Studio[] = [];
           setStudios(prev => {
+            const deletedIds = getDeletedStudioIds();
+            const deletedEmails = getDeletedStudioEmails();
             const map = new Map<string, Studio>();
-            prev.filter(s => s && !FAKE_STUDIO_IDS.has(s.id)).forEach(s => map.set(s.id, s));
-            (remoteStudios || []).filter(s => s && !FAKE_STUDIO_IDS.has(s.id)).forEach(s => {
+            prev.filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim()))).forEach(s => map.set(s.id, s));
+            (remoteStudios || []).filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim()))).forEach(s => {
               const local = map.get(s.id);
               if (!local) {
                 map.set(s.id, s);
@@ -696,8 +809,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 map.set(s.id, { ...s, ...local, status: preferredStatus });
               }
             });
-            merged = deduplicateStudios(Array.from(map.values()).filter(s => s && !FAKE_STUDIO_IDS.has(s.id)));
-            return merged.length > 0 ? merged : INITIAL_STUDIOS;
+            merged = deduplicateStudios(Array.from(map.values()).filter(s => s && !FAKE_STUDIO_IDS.has(s.id) && !deletedIds.has(s.id) && !(s.email && deletedEmails.has(s.email.toLowerCase().trim()))));
+            return merged;
           });
 
           // Bidirectional sync: sync local studios to server bulk-sync
@@ -834,7 +947,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [activeStudio?.id]);
 
-  // Super Admin Login - ONLY prismaldental@gmail.com with password Ssaazz123!
+  // Super Admin Login - ONLY prismaldental@gmail.com & diegoraimondi7@gmail.com with password Ssaazz123!
   const loginSuperAdmin = (email: string, password?: string) => {
     const normalized = email.toLowerCase().trim();
 
@@ -845,10 +958,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    if (normalized !== 'prismaldental@gmail.com') {
+    const SUPER_ADMIN_EMAILS = ['prismaldental@gmail.com', 'diegoraimondi7@gmail.com'];
+    if (!SUPER_ADMIN_EMAILS.includes(normalized)) {
       return {
         success: false,
-        error: 'Credenziali non autorizzate. Accesso consentito al Super Amministratore (prismaldental@gmail.com).',
+        error: 'Credenziali non autorizzate per il ruolo di Super Amministratore.',
       };
     }
 
@@ -1104,11 +1218,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const finalPhone = cleanedPhone === '+39' ? '' : cleanedPhone;
     const targetEmail = data.email?.trim() || registrationDraftEmail || 'studio@prismal.app';
 
+    // Unmark any previous deletion records for this email
+    unmarkStudioAsDeleted(targetEmail, targetEmail);
+
+    const nowIso = new Date().toISOString();
+    const trialEndIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const freshTrialSubscription: StudioSubscription = {
+      status: 'trialing',
+      planId: 'prismal_prime',
+      billingCycle: 'monthly',
+      currentPeriodStart: nowIso,
+      currentPeriodEnd: trialEndIso,
+      cancelAtPeriodEnd: false,
+      monthlyUsedBookings: 0,
+      extraBookingsPurchased: 0,
+      monthlyUsedSms: 0,
+      extraSmsPurchased: 0,
+      lastPaymentAmount: 0,
+    };
+
     // Strict uniqueness check across all studios
     const dupCheck = findDuplicateStudio(studios, { email: targetEmail, phone: finalPhone });
     if (dupCheck.isDuplicate) {
-      if (dupCheck.field === 'email') {
-        throw new Error(`Uno studio con l'email ${targetEmail} è già registrato.`);
+      if (dupCheck.field === 'email' && dupCheck.existingStudio) {
+        // If studio with this email already exists, update and ensure full 30 days trial if not paid
+        const existing = dupCheck.existingStudio;
+        const isPaid = existing.subscription?.status === 'active' && !existing.subscription?.cancelAtPeriodEnd;
+        const updated: Studio = {
+          ...existing,
+          name: data.name.trim() || existing.name,
+          phone: finalPhone || existing.phone,
+          address: data.address ? data.address.trim() : existing.address,
+          city: data.city ? data.city.trim() : existing.city,
+          logoUrl: data.logoUrl || existing.logoUrl,
+          plan: data.plan || existing.plan || 'prismal_prime',
+          createdAt: isPaid ? existing.createdAt : nowIso,
+          subscription: isPaid ? existing.subscription : freshTrialSubscription,
+        };
+        setStudios(prev => prev.map(s => (s.id === existing.id ? updated : s)));
+        saveStudioToFirestore(updated).catch(() => {});
+        setCurrentStudioId(existing.id);
+        setOnboardingStep('completed');
+        const session: AuthSession = {
+          role: 'studio_admin',
+          email: updated.email,
+          studioId: existing.id,
+          studioName: updated.name,
+        };
+        setAuthSession(session);
+        setCurrentRole('studio_admin');
+        return updated;
       } else {
         throw new Error(`Uno studio con il numero di telefono ${finalPhone} è già registrato.`);
       }
@@ -1127,14 +1286,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       city: data.city ? data.city.trim() : '',
       websiteUrl: data.websiteUrl ? data.websiteUrl.trim() : '',
       twoFactorEnabled: false,
-      status: 'pending', // Pending Super Admin approval
+      status: 'approved_demo', // Ready for immediate access
       plan: data.plan || 'prismal_prime',
       demoSlotsTotal: 99999,
       demoSlotsRemaining: 99999,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       slotDurationMinutes: 30,
       weeklyAvailability: DEFAULT_WEEKLY_AVAILABILITY,
       visitReasons: DEFAULT_VISIT_REASONS,
+      subscription: freshTrialSubscription,
     };
 
     setStudios(prev => deduplicateStudios([newStudio, ...prev]));
@@ -1234,31 +1394,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const name = sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || email;
       const userType = (localStorage.getItem('prismal_supabase_user_type') as UserType) || 'studio';
 
-      if (userType === 'super_admin' || email === 'prismaldental@gmail.com') {
+      const SUPER_ADMIN_EMAILS = ['prismaldental@gmail.com', 'diegoraimondi7@gmail.com'];
+      if (userType === 'super_admin' || SUPER_ADMIN_EMAILS.includes(email)) {
         const res = loginSuperAdmin(email, 'Ssaazz123!');
         if (res.success) {
           console.log('[Supabase Auth] Logged in as Super Admin:', email);
+          setAuthSession({
+            role: 'super_admin',
+            email,
+          });
+          setCurrentRole('super_admin');
         }
       } else if (userType === 'patient') {
+        const authMode = localStorage.getItem('prismal_auth_mode') || 'login';
+        let existingProfile: any = null;
+        try {
+          const raw = localStorage.getItem('prismal_patient_profile');
+          if (raw) existingProfile = JSON.parse(raw);
+        } catch {}
+
         setCurrentRole('patient');
         setAuthSession({
           role: 'patient',
           email,
-          patientName: name,
+          patientName: existingProfile?.name || name,
         });
         console.log('[Supabase Auth] Logged in as Patient:', email);
       } else {
         // Studio login or registration
+        const authMode = localStorage.getItem('prismal_auth_mode') || 'login';
         const studioRes = loginStudioWithGoogle({ email, name });
-        if (!studioRes.success) {
-          // If not registered yet, start onboarding
+        if (studioRes.success) {
+          // Studio already exists with this Google account: log in directly!
+          setOnboardingStep('completed');
+          setCurrentRole('studio_admin');
+          console.log('[Supabase Auth] Studio already registered, logged in directly:', email);
+        } else {
+          // If not registered yet, open profile setup step
           startStudioRegistrationWithGoogle({ email, name });
           setRegistrationDraftEmail(email);
           setOnboardingStep('profile_setup');
           setCurrentRole('studio_admin');
+          console.log('[Supabase Auth] Starting Studio registration with Google verified email:', email);
         }
       }
     };
+
+    // Listen for OAuth messages from popup callbacks
+    const handleOAuthMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'PRISMAL_OAUTH_SUCCESS') {
+        let sessionUser = event.data?.user;
+        if (!sessionUser) {
+          const { data: { session } } = await supabase.auth.getSession();
+          sessionUser = session?.user;
+        }
+        if (sessionUser) {
+          handleSupabaseSession(sessionUser);
+        } else if (event.data?.email) {
+          handleSupabaseSession({
+            email: event.data.email,
+            user_metadata: event.data.userMetadata || {},
+          });
+        }
+      }
+    };
+    window.addEventListener('message', handleOAuthMessage);
 
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1274,6 +1474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => {
+      window.removeEventListener('message', handleOAuthMessage);
       subscription.unsubscribe();
     };
   }, [studios]);
@@ -1439,6 +1640,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteStudio = (studioId: string) => {
+    const target = studios.find(s => s.id === studioId);
+    markStudioAsDeleted(studioId, target?.email);
     setStudios(prev => {
       const updated = prev.filter(s => s.id !== studioId);
       try {
@@ -1465,6 +1668,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remaining = studios.filter(s => s.id !== studioId);
       setCurrentStudioId(remaining.length > 0 ? remaining[0].id : null);
     }
+    if (authSession?.studioId === studioId) {
+      setAuthSession(null);
+    }
     // Delete permanently from Firestore
     deleteStudioFromFirestore(studioId).catch(() => {});
 
@@ -1473,8 +1679,75 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fetch(`/api/studios/${studioId}`, {
         method: 'DELETE',
       }).catch(err => console.error('Error deleting studio from server:', err));
+
+      if (target?.email) {
+        fetch(`/api/studios/by-email/${encodeURIComponent(target.email)}`, {
+          method: 'DELETE',
+        }).catch(() => {});
+      }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const verifyCardSetup = async (
+    studioId: string,
+    cardBrand?: string,
+    cardLast4?: string,
+    success: boolean = true,
+    errorReason?: string
+  ) => {
+    try {
+      const res = await fetch('/api/payments/verify-card-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studioId, cardBrand, cardLast4, success, errorReason }),
+      });
+      const data = await res.json();
+      if (data.studio) {
+        setStudios(prev => prev.map(s => (s.id === studioId ? { ...s, ...data.studio } : s)));
+        saveStudioToFirestore(data.studio).catch(() => {});
+      }
+      return data;
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Errore di connessione' };
+    }
+  };
+
+  const simulateTrialRenewal = async (studioId: string, outcome: 'success' | 'failure') => {
+    try {
+      const res = await fetch('/api/payments/simulate-trial-renewal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studioId, outcome }),
+      });
+      const data = await res.json();
+      if (data.studio) {
+        setStudios(prev => prev.map(s => (s.id === studioId ? { ...s, ...data.studio } : s)));
+        saveStudioToFirestore(data.studio).catch(() => {});
+      }
+      return data;
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Errore di connessione' };
+    }
+  };
+
+  const confirmStudioStripePayment = async (studioId: string, billingCycle: 'monthly' | 'annual' = 'monthly') => {
+    try {
+      const res = await fetch('/api/payments/confirm-stripe-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studioId, billingCycle }),
+      });
+      const data = await res.json();
+      if (data.success && data.studio) {
+        setStudios(prev => prev.map(s => (s.id === studioId ? { ...s, ...data.studio } : s)));
+        saveStudioToFirestore(data.studio).catch(() => {});
+        return { success: true, studio: data.studio, transaction: data.transaction };
+      }
+      return { success: false, error: data.error || 'Impossibile confermare il pagamento' };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Errore di connessione' };
     }
   };
 
@@ -1742,6 +2015,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...s,
             subscription: {
               ...sub,
+              status: 'cancelled',
               cancelAtPeriodEnd: true,
             },
           };
@@ -1857,15 +2131,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateAppointmentStatus = (appointmentId: string, status: Appointment['status']) => {
+    let targetAppt: Appointment | undefined;
     setAppointments(prev =>
-      prev.map(a => (a.id === appointmentId ? { ...a, status } : a))
+      prev.map(a => {
+        if (a.id === appointmentId) {
+          targetAppt = { ...a, status };
+          return targetAppt;
+        }
+        return a;
+      })
     );
-    updateAppointmentStatusInFirestore(appointmentId, status).catch(() => {});
+    updateAppointmentStatusInFirestore(appointmentId, status, targetAppt).catch(() => {});
     fetch(`/api/appointments/${appointmentId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     }).catch(() => {});
+  };
+
+  const updateAppointmentDetails = (appointmentId: string, updates: Partial<Appointment>) => {
+    let targetAppt: Appointment | undefined;
+    setAppointments(prev =>
+      prev.map(a => {
+        if (a.id === appointmentId) {
+          const updated = { ...a, ...updates };
+          targetAppt = updated;
+          try {
+            fetch(`/api/appointments/${appointmentId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updated),
+            }).catch(() => {});
+          } catch {}
+          return updated;
+        }
+        return a;
+      })
+    );
+    if (targetAppt) {
+      saveAppointmentToFirestore(targetAppt).catch(() => {});
+    }
+  };
+
+  const deleteAppointment = (appointmentId: string) => {
+    setAppointments(prev => prev.filter(a => a.id !== appointmentId));
+    deleteAppointmentFromFirestore(appointmentId).catch(() => {});
+    try {
+      fetch(`/api/appointments/${appointmentId}`, {
+        method: 'DELETE',
+      }).catch(() => {});
+    } catch {}
   };
 
   // Blocked slots management
@@ -2216,7 +2531,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAppointments(prev =>
       prev.map(a => (a.id === apt.id ? { ...a, status: 'cancelled' } : a))
     );
-    updateAppointmentStatusInFirestore(apt.id, 'cancelled').catch(() => {});
+    updateAppointmentStatusInFirestore(apt.id, 'cancelled', { ...apt, status: 'cancelled' }).catch(() => {});
 
     // If on demo plan, we can restore the slot
     const studio = studios.find(s => s.id === apt.studioId);
@@ -2456,22 +2771,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
-    setStudios(INITIAL_STUDIOS);
-    setAppointments(INITIAL_APPOINTMENTS);
-    setBlockedSlots(INITIAL_BLOCKED_SLOTS);
-    setNotifications(INITIAL_NOTIFICATIONS);
+    setAppointments([]);
+    setBlockedSlots([]);
+    setNotifications([]);
+    setPatientRecords([]);
     setPlatformTransactions([]);
     setSearchLogs([]);
-    setCurrentStudioId('studio-rossi');
-    setPatientViewingSlug('studio-rossi');
-    setActivePatientToken(null);
-    setOnboardingStep('completed');
-    localStorage.removeItem(STORAGE_KEYS.STUDIOS);
-    localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
-    localStorage.removeItem(STORAGE_KEYS.BLOCKED_SLOTS);
-    localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
-    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-    localStorage.removeItem('prismal_search_logs_v1');
+    try {
+      localStorage.removeItem(STORAGE_KEYS.APPOINTMENTS);
+      localStorage.removeItem(STORAGE_KEYS.BLOCKED_SLOTS);
+      localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+      localStorage.removeItem(STORAGE_KEYS.PATIENT_RECORDS);
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+      localStorage.removeItem('prismal_search_logs_v1');
+    } catch {}
+    fetch('/api/admin/reset-data', { method: 'POST' }).catch(() => {});
+    clearAllAppointmentsFromFirestore().catch(() => {});
+    clearAllBlockedSlotsFromFirestore().catch(() => {});
+    clearAllPatientRecordsFromFirestore().catch(() => {});
+    clearAllPlatformTransactionsFromFirestore().catch(() => {});
   };
 
   return (
@@ -2524,6 +2842,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStudioProfile,
         updateWeeklyAvailability,
         updateAppointmentStatus,
+        updateAppointmentDetails,
+        deleteAppointment,
         addBlockedSlot,
         removeBlockedSlot,
         isSlotBlocked,
@@ -2542,6 +2862,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         platformTransactions,
         processStudioPayment,
         approvePendingTransaction,
+        confirmStudioStripePayment,
+        verifyCardSetup,
+        simulateTrialRenewal,
         cancelStudioSubscription,
         deletePlatformTransaction,
         clearAllPlatformTransactions,
@@ -2567,4 +2890,6 @@ export const useApp = () => {
   }
   return context;
 };
+
+export const useAppContext = useApp;
 

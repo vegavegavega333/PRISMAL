@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp, getDeletedStudioIds } from '../../context/AppContext';
 import { Studio } from '../../types';
 import { PrismalLogo, PrismalHeroBrand } from '../PrismalLogo';
 import { LocationPickerModal } from './LocationPickerModal';
@@ -212,12 +212,16 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
   const searchResults = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     const loc = locationQuery.toLowerCase().trim();
+    const deletedIds = getDeletedStudioIds();
 
     // Check if query is a general dental practice
     const isPracticeQuery = q ? DENTAL_PRACTICE_KEYWORDS.some(k => q.includes(k) || k.includes(q)) : false;
 
     return studios
       .filter(studio => {
+        if (!studio || !studio.id) return false;
+        if (deletedIds.has(studio.id)) return false;
+
         // Exclude suspended clinics
         if (studio.status === 'suspended') return false;
 
@@ -266,7 +270,10 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
           );
           if (matchSpec || matchServ) {
             specialtyMatch = true;
-            matchedSpecialtyLabel = matchSpec || matchServ?.name || q;
+            const rawLabel = matchSpec || matchServ?.name || q;
+            matchedSpecialtyLabel = (rawLabel || '')
+              .replace(/Ablazione\s+Tartufo/gi, 'Ablazione del Tartaro')
+              .replace(/tartufo/gi, 'tartaro');
             // Major boost in relevance so specialized studios appear on top, while others remain visible!
             score += 600;
           }
@@ -341,7 +348,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
             <button
               type="button"
               onClick={onOpenAuthModal}
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition cursor-pointer flex items-center justify-center"
+              className="h-8 sm:h-10 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition cursor-pointer flex items-center justify-center shadow-2xs"
             >
               Accedi
             </button>
@@ -350,7 +357,7 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
             <button
               type="button"
               onClick={onStartRegistration}
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-950 hover:bg-purple-700 transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+              className="h-8 sm:h-10 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-950 hover:bg-purple-700 transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-300 hidden sm:inline" />
               <span className="hidden sm:inline">Registra il tuo Studio</span>
@@ -538,7 +545,9 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
-                {searchResults.length === 1
+                {searchResults.length === 0
+                  ? '0 Studi Odontoiatrici Disponibili'
+                  : searchResults.length === 1
                   ? '1 Studio Odontoiatrico Disponibile'
                   : `${searchResults.length} Studi Odontoiatrici Disponibili`}
               </h2>
@@ -594,10 +603,14 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                 <Search className="w-5 h-5" />
               </div>
               <h3 className="text-sm sm:text-base font-extrabold text-slate-800">
-                Nessuno studio trovato per "{searchQuery}"
+                {searchQuery || locationQuery
+                  ? `Nessuno studio trovato per "${searchQuery || locationQuery}"`
+                  : 'Nessuno studio odontoiatrico disponibile'}
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Tutti gli studi registrati offrono cure odontoiatriche generali. Prova a reimpostare i filtri per vedere tutti gli studi accreditati.
+                {searchQuery || locationQuery
+                  ? 'Prova a reimpostare i filtri per vedere tutti gli studi accreditati.'
+                  : 'Non ci sono studi odontoiatrici attivi al momento.'}
               </p>
               <button
                 type="button"
@@ -676,7 +689,12 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                           {studio.specialtyMatch ? (
                             <span className="text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-md flex items-center gap-1">
                               <Sparkles className="w-2.5 h-2.5 text-purple-600" />
-                              <span>Specialità di punta: {studio.matchedSpecialtyLabel}</span>
+                              <span>
+                                Specialità di punta:{' '}
+                                {(studio.matchedSpecialtyLabel || '')
+                                  .replace(/Ablazione\s+Tartufo/gi, 'Ablazione del Tartaro')
+                                  .replace(/tartufo/gi, 'tartaro')}
+                              </span>
                             </span>
                           ) : searchQuery.trim() && DENTAL_PRACTICE_KEYWORDS.some(k => searchQuery.toLowerCase().includes(k)) ? (
                             <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md">
@@ -694,7 +712,9 @@ export const DentalSearchEngine: React.FC<DentalSearchEngineProps> = ({
                                 key={i}
                                 className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md"
                               >
-                                {spec}
+                                {(spec || '')
+                                  .replace(/Ablazione\s+Tartufo/gi, 'Ablazione del Tartaro')
+                                  .replace(/tartufo/gi, 'tartaro')}
                               </span>
                             ))}
                         </div>

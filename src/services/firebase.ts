@@ -119,9 +119,9 @@ export async function saveStudioToFirestore(studio: Studio): Promise<void> {
 export async function updateStudioInFirestore(studioId: string, updates: Partial<Studio>): Promise<void> {
   try {
     const docRef = doc(db, STUDIOS_COLLECTION, studioId);
-    await updateDoc(docRef, updates as any);
+    await setDoc(docRef, updates as any, { merge: true });
   } catch (err) {
-    console.error('[Firebase] Error updating studio:', err);
+    console.warn('[Firebase] Warning updating studio in Firestore:', err);
   }
 }
 
@@ -133,7 +133,7 @@ export async function deleteStudioFromFirestore(studioId: string): Promise<void>
     const docRef = doc(db, STUDIOS_COLLECTION, studioId);
     await deleteDoc(docRef);
   } catch (err) {
-    console.error('[Firebase] Error deleting studio from Firestore:', err);
+    console.warn('[Firebase] Warning deleting studio from Firestore:', err);
   }
 }
 
@@ -155,7 +155,7 @@ export function subscribeToStudios(callback: (studios: Studio[]) => void): () =>
       }
     );
   } catch (err) {
-    console.error('[Firebase] Error subscribing to studios:', err);
+    console.warn('[Firebase] Warning subscribing to studios:', err);
     return () => {};
   }
 }
@@ -178,7 +178,7 @@ export async function getAppointmentsFromFirestore(studioId?: string): Promise<A
     snap.forEach(d => appts.push(d.data() as Appointment));
     return appts;
   } catch (err) {
-    console.error('[Firebase] Error fetching appointments:', err);
+    console.warn('[Firebase] Warning fetching appointments:', err);
     return [];
   }
 }
@@ -191,22 +191,49 @@ export async function saveAppointmentToFirestore(appointment: Appointment): Prom
     const docRef = doc(db, APPOINTMENTS_COLLECTION, appointment.id);
     await setDoc(docRef, appointment, { merge: true });
   } catch (err) {
-    console.error('[Firebase] Error saving appointment:', err);
+    console.warn('[Firebase] Warning saving appointment:', err);
   }
 }
 
 /**
- * Update the status of an appointment in Firestore
+ * Update the status of an appointment in Firestore safely using setDoc merge
+ * If the appointment did not previously exist in Firestore, this creates or merges without throwing 'No document to update'
  */
 export async function updateAppointmentStatusInFirestore(
   appointmentId: string,
-  status: AppointmentStatus
+  status: AppointmentStatus,
+  fullAppointment?: Partial<Appointment>
 ): Promise<void> {
   try {
     const docRef = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
-    await updateDoc(docRef, { status });
+    const payload = fullAppointment ? { ...fullAppointment, status } : { status };
+    await setDoc(docRef, payload, { merge: true });
   } catch (err) {
-    console.error('[Firebase] Error updating appointment status:', err);
+    console.warn('[Firebase] Warning updating appointment status:', err);
+  }
+}
+
+/**
+ * Delete an appointment permanently from Firestore
+ */
+export async function deleteAppointmentFromFirestore(appointmentId: string): Promise<void> {
+  try {
+    const docRef = doc(db, APPOINTMENTS_COLLECTION, appointmentId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('[Firebase] Warning deleting appointment:', err);
+  }
+}
+
+/**
+ * Delete all appointments from Firestore (resets platform appointments collection)
+ */
+export async function clearAllAppointmentsFromFirestore(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, APPOINTMENTS_COLLECTION));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  } catch (err) {
+    console.warn('[Firebase] Warning clearing appointments:', err);
   }
 }
 
@@ -275,7 +302,19 @@ export async function deleteBlockedSlotFromFirestore(slotId: string): Promise<vo
     const docRef = doc(db, BLOCKED_SLOTS_COLLECTION, slotId);
     await deleteDoc(docRef);
   } catch (err) {
-    console.error('[Firebase] Error deleting blocked slot:', err);
+    console.warn('[Firebase] Warning deleting blocked slot:', err);
+  }
+}
+
+/**
+ * Delete all blocked slots from Firestore
+ */
+export async function clearAllBlockedSlotsFromFirestore(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, BLOCKED_SLOTS_COLLECTION));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  } catch (err) {
+    console.warn('[Firebase] Warning clearing blocked slots:', err);
   }
 }
 
@@ -332,7 +371,31 @@ export async function savePatientRecordToFirestore(patient: PatientRecord): Prom
     const docRef = doc(db, PATIENTS_COLLECTION, patient.id);
     await setDoc(docRef, { ...patient, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {
-    console.error('[Firebase] Error saving patient record:', err);
+    console.warn('[Firebase] Warning saving patient record:', err);
+  }
+}
+
+/**
+ * Delete a patient record from Firestore
+ */
+export async function deletePatientRecordFromFirestore(patientId: string): Promise<void> {
+  try {
+    const docRef = doc(db, PATIENTS_COLLECTION, patientId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('[Firebase] Warning deleting patient record:', err);
+  }
+}
+
+/**
+ * Delete all patient records from Firestore
+ */
+export async function clearAllPatientRecordsFromFirestore(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, PATIENTS_COLLECTION));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  } catch (err) {
+    console.warn('[Firebase] Warning clearing patient records:', err);
   }
 }
 

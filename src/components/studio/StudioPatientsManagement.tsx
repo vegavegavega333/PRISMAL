@@ -5,6 +5,7 @@ import { PatientClinicalRecordModal } from './PatientClinicalRecordModal';
 import { GdprConsentCertificateModal } from '../common/GdprConsentCertificateModal';
 import { StudioSendSmsModal } from './StudioSendSmsModal';
 import { CURRENT_PRIVACY_POLICY_VERSION } from '../../data/gdprPolicy';
+import { formatPatientFullName } from './StudioMultiChairsView';
 import {
   Users,
   Search,
@@ -561,7 +562,7 @@ export const StudioPatientsManagement: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <h4 className="text-base font-bold text-slate-900">
-                            {patient.firstName} {patient.lastName}
+                            {formatPatientFullName(patient.firstName, patient.lastName)}
                           </h4>
 
                           {patient.fiscalCode && (

@@ -46,7 +46,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({ isOp
     if (isOpen) {
       setError(null);
       setSuccessNotice(null);
-      setEmail('prismaldental@gmail.com');
+      setEmail('');
       setPassword('');
       setIsSubmitting(false);
       setIsPasskeyLoading(false);
@@ -56,7 +56,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({ isOp
       const supported = isPasskeySupported();
       setIsBiometricSupported(supported);
       if (supported) {
-        const list = getStoredPasskeys('prismaldental@gmail.com');
+        const list = getStoredPasskeys('diegoraimondi7@gmail.com');
         setHasPasskeys(list.length > 0);
         isBiometricAvailable().then(avail => {
           if (avail) setIsBiometricSupported(true);
@@ -74,7 +74,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({ isOp
     setIsSubmitting(true);
 
     try {
-      const res = await signInWithGoogleSupabase('super_admin');
+      const res = await signInWithGoogleSupabase('super_admin', 'login');
       if (!res.success) {
         setError(res.error || 'Impossibile avviare il login con Google. Se riscontri errore 403, verifica le credenziali e aggiungi la tua email tra gli Utenti di Test nella Google Cloud Console.');
       } else if (res.data?.url) {
@@ -281,7 +281,7 @@ export const SuperAdminLoginModal: React.FC<SuperAdminLoginModalProps> = ({ isOp
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="prismaldental@gmail.com"
+                  placeholder="es. admin@prismal.it"
                   required
                   autoComplete="off"
                   className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white transition"

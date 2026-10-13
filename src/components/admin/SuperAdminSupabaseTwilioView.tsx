@@ -26,10 +26,13 @@ import {
   Calendar,
   Building,
   User,
+  Trash2,
 } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
 import { fetchSupabaseAndTwilioStatus, uploadFileToSupabaseStorage } from '../../services/supabase';
 
 export const SuperAdminSupabaseTwilioView: React.FC = () => {
+  const { studios } = useApp();
   const [status, setStatus] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedSql, setCopiedSql] = useState(false);
@@ -114,15 +117,23 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
     }
   };
 
+  const [isPurging, setIsPurging] = useState(false);
+
   const handleSyncData = async () => {
     setIsSyncing(true);
     setSyncFeedback(null);
     try {
-      const res = await fetch('/api/supabase/sync', { method: 'POST' });
+      const res = await fetch('/api/supabase/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studios }),
+      });
       const data = await res.json();
       if (data.success) {
         setSyncFeedback(`Sincronizzazione completata: ${data.syncedStudios} studi, ${data.syncedAppts} appuntamenti, ${data.syncedTxs} transazioni.`);
         loadStatus();
+        loadTableData(selectedTable);
+        loadAllTableCounts();
       } else {
         setSyncFeedback(`Nota: ${data.error || 'Tabelle Supabase non ancora create. Esegui prima lo script SQL.'}`);
       }
@@ -130,6 +141,57 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
       setSyncFeedback(err?.message || 'Errore durante la sincronizzazione.');
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDeleteRow = async (rowId: string) => {
+    if (!rowId) return;
+    if (!window.confirm(`Confermi di voler eliminare definitivamente il record "${rowId}" da Supabase?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/supabase/tables/${selectedTable}/${encodeURIComponent(rowId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTableRows(prev => prev.filter(r => (r.id || r.code) !== rowId));
+        setTableCounts(prev => ({
+          ...prev,
+          [selectedTable]: Math.max(0, (prev[selectedTable] || 1) - 1),
+        }));
+        setSyncFeedback(`Record "${rowId}" eliminato con successo da public.${selectedTable}.`);
+        loadAllTableCounts();
+      } else {
+        alert(data.error || 'Impossibile eliminare il record.');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Errore di connessione.');
+    }
+  };
+
+  const handlePurgeDeleted = async () => {
+    if (!window.confirm('Vuoi rimuovere tutti i record eliminati o di test da Supabase per sincronizzare completamente il cloud con la piattaforma?')) {
+      return;
+    }
+    setIsPurging(true);
+    try {
+      const res = await fetch(`/api/supabase/tables/${selectedTable}/purge-deleted`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSyncFeedback(data.message || 'Pulizia completata con successo.');
+        loadTableData(selectedTable);
+        loadAllTableCounts();
+      } else {
+        alert(data.error || 'Errore durante la pulizia.');
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Errore di connessione.');
+    } finally {
+      setIsPurging(false);
     }
   };
 
@@ -546,10 +608,20 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
               type="button"
               onClick={handleSyncData}
               disabled={isSyncing}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Zap className={`w-3.5 h-3.5 text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'Sincronizzazione...' : 'Sincronizza Dati'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePurgeDeleted}
+              disabled={isPurging}
+              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              title="Rimuovi record eliminati o di test dal cloud database"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isPurging ? 'Pulizia...' : 'Pulisci Obsoleti'}</span>
             </button>
             <button
               type="button"
@@ -829,14 +901,25 @@ export const SuperAdminSupabaseTwilioView: React.FC = () => {
                               </>
                             )}
 
-                            <td className="p-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setExpandedRowId(isExpanded ? null : (row.id || String(idx)))}
-                                className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-                              >
-                                {isExpanded ? 'Chiudi' : 'JSON'}
-                              </button>
+                            <td className="p-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedRowId(isExpanded ? null : (row.id || String(idx)))}
+                                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                                  title="Visualizza dettagli JSON completi"
+                                >
+                                  {isExpanded ? 'Chiudi' : 'JSON'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteRow(row.id || row.code)}
+                                  className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                  title="Elimina definitivamente questo record da Supabase"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
 

@@ -225,17 +225,22 @@ export function isFeatureAllowed(_plan: PlanType, _feature: PlanFeatureKey): boo
 export function getStudioTrialStatus(studio: Studio | null): {
   isTrialing: boolean;
   isPaidActive: boolean;
+  isTrialExpired: boolean;
+  cardSetupVerified: boolean;
   hasConnectedCard: boolean;
   daysRemaining: number;
   renewalDateStr: string;
   cancelAtPeriodEnd: boolean;
   cardLast4?: string;
   cardBrand?: string;
+  cardVerificationError?: string;
 } {
   if (!studio) {
     return {
       isTrialing: false,
       isPaidActive: false,
+      isTrialExpired: false,
+      cardSetupVerified: false,
       hasConnectedCard: false,
       daysRemaining: 0,
       renewalDateStr: '',
@@ -248,13 +253,32 @@ export function getStudioTrialStatus(studio: Studio | null): {
   const cardBrand = sub?.paymentMethodDetails?.brand || (sub?.paymentMethod === 'google_pay' ? 'Google Pay' : sub?.paymentMethod === 'paypal' ? 'PayPal' : 'Carta');
   const hasConnectedCard = !!cardLast4 || sub?.paymentMethod === 'credit_card' || sub?.paymentMethod === 'google_pay' || sub?.paymentMethod === 'paypal';
 
-  const isPaidActive = sub?.status === 'active' && !sub?.cancelAtPeriodEnd && (sub?.lastPaymentAmount || 0) > 0;
-  
-  // Trialing if marked trialing or if status is not explicitly cancelled and trial period is running
-  const isTrialing = sub?.status === 'trialing' || (!isPaidActive && hasConnectedCard && !sub?.cancelAtPeriodEnd);
+  // Card verification (Stripe $0.00 pre-authorization check)
+  const isCardDeclined = Boolean(sub?.cardVerificationError) || sub?.status === 'unpaid';
+  const cardSetupVerified = sub?.cardSetupVerified !== false && !isCardDeclined;
 
+  const isPaidActive =
+    (sub?.status === 'active' && !sub?.cancelAtPeriodEnd) ||
+    (studio.status === 'active_pro' && studio.plan === 'prismal_prime' && sub?.status !== 'trialing' && sub?.status !== 'expired' && sub?.status !== 'cancelled');
+  
   const endMs = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() : Date.now() + 30 * 86400000;
+  const isPeriodPast = Boolean(sub?.currentPeriodEnd) && endMs < Date.now();
   const daysRemaining = Math.max(0, Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24)));
+
+  // If subscription was cancelled or trial deleted by the user, mark as cancelled so trial countdown stops immediately
+  const isTrialCancelled = sub?.status === 'cancelled' || Boolean(sub?.cancelAtPeriodEnd);
+  const isTrialExpired = !isPaidActive && (sub?.status === 'expired' || isPeriodPast || isCardDeclined || isTrialCancelled);
+
+  // Active trial only if not paid, not expired, not cancelled, card verification passed, and marked trialing
+  const isTrialing =
+    !isPaidActive &&
+    !isTrialExpired &&
+    !isTrialCancelled &&
+    cardSetupVerified &&
+    (sub?.status === 'trialing' ||
+      studio.status === 'approved_demo' ||
+      studio.status === 'pending');
+
   const renewalDateStr = sub?.currentPeriodEnd 
     ? new Date(sub.currentPeriodEnd).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
     : new Date(Date.now() + 30 * 86400000).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -262,19 +286,22 @@ export function getStudioTrialStatus(studio: Studio | null): {
   return {
     isTrialing,
     isPaidActive,
+    isTrialExpired,
+    cardSetupVerified,
     hasConnectedCard,
-    daysRemaining,
+    daysRemaining: isTrialExpired ? 0 : daysRemaining,
     renewalDateStr,
     cancelAtPeriodEnd: !!sub?.cancelAtPeriodEnd,
     cardLast4,
     cardBrand,
+    cardVerificationError: sub?.cardVerificationError,
   };
 }
 
 /**
- * Calculates monthly booking usage and capacity for a studio (Unlimited in PRISMAL Prime)
+ * Calculates monthly booking usage and capacity for a studio (Unlimited in PRISMAL Prime during active trial or paid)
  */
-export function getStudioQuotaStatus(_studio: Studio, _appointments: Appointment[]): {
+export function getStudioQuotaStatus(studio: Studio, appointments: Appointment[]): {
   planName: string;
   isDemo: boolean;
   isUnlimited: boolean;
@@ -289,19 +316,26 @@ export function getStudioQuotaStatus(_studio: Studio, _appointments: Appointment
   smsRemaining: number;
   smsPctUsed: number;
 } {
+  const trialStatus = getStudioTrialStatus(studio);
+  const isUnlimited = trialStatus.isPaidActive || trialStatus.isTrialing;
+  const studioAppts = (appointments || []).filter(a => a.studioId === studio?.id);
+  const used = studioAppts.length;
+  const totalLimit = isUnlimited ? -1 : 10;
+  const remaining = isUnlimited ? 99999 : Math.max(0, totalLimit - used);
+
   return {
     planName: PRISMAL_PRIME_CONFIG.name,
-    isDemo: false,
-    isUnlimited: true,
-    totalLimit: -1,
-    used: 0,
-    remaining: 99999,
-    pctUsed: 0,
-    isExhausted: false,
+    isDemo: !isUnlimited,
+    isUnlimited,
+    totalLimit,
+    used,
+    remaining,
+    pctUsed: isUnlimited ? 0 : Math.min(100, Math.round((used / totalLimit) * 100)),
+    isExhausted: !isUnlimited && remaining <= 0,
     extraPurchased: 0,
-    smsTotalLimit: 250,
+    smsTotalLimit: isUnlimited ? 250 : 10,
     smsUsed: 0,
-    smsRemaining: 250,
+    smsRemaining: isUnlimited ? 250 : 10,
     smsPctUsed: 0,
   };
 }

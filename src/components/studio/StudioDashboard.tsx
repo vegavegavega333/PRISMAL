@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { OrbGrid } from '../ui/OrbGrid';
 import { StudioAppointments } from './StudioAppointments';
 import { StudioVisualCalendar } from './StudioVisualCalendar';
 import { StudioPatientsManagement } from './StudioPatientsManagement';
 import { StudioAiAssistant } from './StudioAiAssistant';
+import { StudioAiReceptionistView } from './StudioAiReceptionistView';
 import { StudioAvailability } from './StudioAvailability';
 import { StudioSettings } from './StudioSettings';
 import { StudioCalendarBlocking } from './StudioCalendarBlocking';
@@ -40,6 +42,9 @@ import {
   TrendingUp,
   ArrowRight,
   HeartPulse,
+  Crown,
+  PhoneCall,
+  MessageSquare,
 } from 'lucide-react';
 
 export const StudioDashboard: React.FC = () => {
@@ -51,12 +56,15 @@ export const StudioDashboard: React.FC = () => {
     patientRecords,
     setCurrentRole,
     setPatientViewingSlug,
+    confirmStudioStripePayment,
   } = useApp();
 
   const [odontogramPatient, setOdontogramPatient] = useState<any | null>(null);
+  const [isActivatingPrime, setIsActivatingPrime] = useState(false);
+  const [activationToast, setActivationToast] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<
-    'calendar' | 'list' | 'analytics' | 'patients' | 'ai' | 'availability' | 'smart_rules' | 'gdpr' | 'blocking' | 'notifications' | 'integrations' | 'upgrade' | 'sponsorship' | 'settings'
+    'calendar' | 'list' | 'analytics' | 'patients' | 'receptionist' | 'ai' | 'availability' | 'smart_rules' | 'gdpr' | 'blocking' | 'notifications' | 'integrations' | 'upgrade' | 'sponsorship' | 'settings'
   >('calendar');
 
   // Offline resilience detection (anti-blackout vs XDENT)
@@ -232,78 +240,143 @@ export const StudioDashboard: React.FC = () => {
                 <span className="text-emerald-700 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" /> Abbonamento Attivo (149€/mese)
                 </span>
-              ) : trialStatus.isTrialing ? (
-                <span className="text-amber-800 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" /> Prova: {trialStatus.daysRemaining}gg rimasti
-                </span>
               ) : (
                 <span className="text-purple-700 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Prova 30gg da attivare (0,00€)
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" /> PRISMAL Prime Cloud
                 </span>
               )}
             </div>
 
             <div className="flex flex-col sm:items-end gap-1.5 mt-2">
-              <a
-                href="https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-xs transition hover:scale-[1.02] cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Abbonati / Attiva Piano (€149/m)</span>
-                <ExternalLink className="w-3 h-3 opacity-80" />
-              </a>
-
               <button
                 onClick={() => setActiveTab('upgrade')}
-                className="text-[11px] font-bold text-purple-700 hover:text-purple-900 flex items-center sm:justify-end gap-1 cursor-pointer hover:underline"
+                className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center sm:justify-end gap-1 cursor-pointer hover:underline"
               >
-                <span>
-                  {trialStatus.isPaidActive
-                    ? 'Gestione Piano & Fatture'
-                    : trialStatus.isTrialing
-                    ? 'Gestione Prova & Rinnovo'
-                    : 'Collega Metodo di Pagamento'}
-                </span>
-                <ArrowRight className="w-3 h-3" />
+                <span>Gestione Piano & Abbonamento</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* STRIPE SUBSCRIPTION BANNER */}
-      <div className="p-4 sm:p-4.5 rounded-3xl bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-purple-800/50">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-            <Zap className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-xs sm:text-sm font-black text-white">
-                PRISMAL Clinical Suite • Attivazione Piano Studio
-              </h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                €149/mese
-              </span>
+      {/* STRIPE SUBSCRIPTION BANNER WITH ORIGINKIT ORBGRID ACCENT */}
+      {trialStatus.isPaidActive ? (
+        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-slate-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-sm border border-slate-800">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
             </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              Attiva subito l'accesso completo per il tuo studio dentistico con il link ufficiale Stripe: zero limiti su appuntamenti, poltrone e odontogramma 3D.
-            </p>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-black tracking-tight text-white">
+                  PRISMAL Prime • Abbonamento Attivo
+                </h3>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  Ufficiale • Illimitato
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
+                Accesso clinico completo operativo: poltrone, agenda e odontogramma 3D sbloccati. Prossimo rinnovo: {trialStatus.renewalDateStr}.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('upgrade')}
+            className="relative z-10 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-xs transition border border-slate-700/80 cursor-pointer shadow-xs whitespace-nowrap"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-400" />
+            <span>Fatture & Dettagli</span>
+          </button>
+        </div>
+      ) : trialStatus.isTrialExpired ? (
+        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-950 to-slate-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-md border border-rose-800/40">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-black tracking-tight text-white">
+                  Periodo di Prova Terminato
+                </h3>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  Scaduto
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5 max-w-xl">
+                I 30 giorni di prova gratuita si sono conclusi. Abbonati per continuare a gestire visite illimitate, anamnesi e odontogramma 3D.
+              </p>
+            </div>
+          </div>
+          <div className="relative z-10 flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <a
+              href={activeStudio ? `https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00?client_reference_id=${encodeURIComponent(activeStudio.id)}&prefilled_email=${encodeURIComponent(activeStudio.email || '')}` : 'https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md hover:shadow-emerald-500/20 whitespace-nowrap cursor-pointer hover:scale-[1.02]"
+            >
+              <CreditCard className="w-4 h-4 text-slate-950" />
+              <span>Abbonati</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-950/70" />
+            </a>
           </div>
         </div>
-        <a
-          href="https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition shadow-md whitespace-nowrap cursor-pointer hover:scale-[1.02]"
-        >
-          <CreditCard className="w-4 h-4 text-slate-950" />
-          <span>Abbonati / Attiva Piano</span>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
-        </a>
-      </div>
+      ) : (
+        <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-slate-950 text-white flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-sm border border-slate-800">
+          {/* Subtle Originkit Orb Canvas Backdrop on Right */}
+          <div className="absolute -right-10 -top-14 w-60 h-60 opacity-35 pointer-events-none sm:pointer-events-auto">
+            <OrbGrid
+              width={240}
+              height={240}
+              density={120}
+              dotSize={110}
+              speed={35}
+              dotColor="#64748b"
+              accentColor="#10b981"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+              <Zap className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-black tracking-tight text-white">
+                  PRISMAL Clinical Suite • 30 Giorni di Prova
+                </h3>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  {trialStatus.daysRemaining} Giorni Rimasti
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
+                La prova gratuita è attiva con tutte le funzionalità sbloccate. Nessun addebito iniziale fino al termine dei 30 giorni.
+              </p>
+            </div>
+          </div>
+          <div className="relative z-10 flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <a
+              href={activeStudio ? `https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00?client_reference_id=${encodeURIComponent(activeStudio.id)}&prefilled_email=${encodeURIComponent(activeStudio.email || '')}` : 'https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md hover:shadow-emerald-500/20 whitespace-nowrap cursor-pointer hover:scale-[1.02]"
+            >
+              <CreditCard className="w-4 h-4 text-slate-950" />
+              <span>Abbonati</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-950/70" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Activation Toast */}
+      {activationToast && (
+        <div className="p-3.5 bg-slate-950 border border-emerald-500/50 text-white rounded-2xl flex items-center gap-2.5 text-xs font-semibold shadow-lg">
+          <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>{activationToast}</span>
+        </div>
+      )}
 
       {/* APPLE STYLE QUICK STATS CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -385,65 +458,6 @@ export const StudioDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* TRIAL & SUBSCRIPTION STATUS BANNER */}
-      {!trialStatus.hasConnectedCard && (
-        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 border border-purple-800 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md animate-in fade-in">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 text-amber-300 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md">
-                  Prova 30 Giorni (0,00€)
-                </span>
-                <span className="text-xs font-bold text-purple-200">
-                  Google Pay • PayPal • Carta di Credito
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Collega Google Pay, PayPal o la tua carta senza alcun addebito oggi per usufruire di 30 giorni completi a costo zero. Tra un mese rinnovo a soli €{PRISMAL_PRIME_PRICE_MONTHLY}/mese, disattivabile in 1 click prima della scadenza.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setActiveTab('upgrade')}
-            className="flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-black transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-            <span>Collega Metodo di Pagamento (0,00€)</span>
-          </button>
-        </div>
-      )}
-
-      {trialStatus.isTrialing && (
-        <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-amber-900">
-                Prova di 30 Giorni in Corso • Mancano {trialStatus.daysRemaining} giorni gratuiti
-              </h4>
-              <p className="text-xs text-amber-800/90 mt-0.5">
-                {trialStatus.cancelAtPeriodEnd
-                  ? 'Il rinnovo automatico è disattivato: la prova scadrà senza alcun addebito.'
-                  : `Rinnovo automatico a soli €${PRISMAL_PRIME_PRICE_MONTHLY}/mese il ${trialStatus.renewalDateStr}. Disattivabile in qualsiasi momento in 1 click.`}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setActiveTab('upgrade')}
-            className="flex-shrink-0 px-3.5 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span>Dettagli Prova & Piano</span>
-          </button>
-        </div>
-      )}
-
       {/* APPLE SEGMENTED NAVIGATION TABS */}
       <div className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60 flex items-center gap-1 overflow-x-auto">
         <button
@@ -500,6 +514,19 @@ export const StudioDashboard: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('receptionist')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap ${
+            activeTab === 'receptionist'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xs'
+              : 'text-emerald-800 hover:text-emerald-950 bg-emerald-50/80 border border-emerald-300/70'
+          }`}
+        >
+          <PhoneCall className="w-4 h-4 text-emerald-500" />
+          <span>Segreteria AI (Voce & WhatsApp)</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        </button>
+
+        <button
           onClick={() => setActiveTab('ai')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
             activeTab === 'ai'
@@ -512,98 +539,15 @@ export const StudioDashboard: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('availability')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'availability'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Clock className="w-4 h-4 text-slate-500" />
-          Orari Studio
-        </button>
-
-        <button
-          onClick={() => setActiveTab('smart_rules')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'smart_rules'
-              ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xs'
-              : 'text-sky-700 hover:text-sky-900 bg-sky-50/60'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-sky-500" />
-          Regole Smart
-        </button>
-
-        <button
-          onClick={() => setActiveTab('gdpr')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'gdpr'
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xs'
-              : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/60'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          Suite GDPR
-        </button>
-
-        <button
-          onClick={() => setActiveTab('blocking')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'blocking'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <CalendarOff className="w-4 h-4 text-rose-500" />
-          Blocchi & Ferie
-          {studioBlockedSlots.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white tabular-nums">
-              {studioBlockedSlots.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('notifications')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'notifications'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Mail className="w-4 h-4 text-sky-500" />
-          Email & Notifiche
-        </button>
-
-        <button
-          onClick={() => setActiveTab('integrations')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeTab === 'integrations'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Plug className="w-4 h-4 text-emerald-500" />
-          Connettori
-        </button>
-
-        <button
           onClick={() => setActiveTab('upgrade')}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
             activeTab === 'upgrade'
               ? 'bg-gradient-to-r from-purple-600 to-sky-600 text-white shadow-xs'
-              : 'text-purple-700 hover:text-purple-900'
+              : 'text-purple-700 hover:text-purple-900 bg-purple-50/70 border border-purple-200/50'
           }`}
         >
-          <CreditCard className="w-4 h-4" />
-          <span>
-            {trialStatus.isPaidActive
-              ? 'Gestione Piano'
-              : trialStatus.isTrialing
-              ? 'Piano & Prova 30gg'
-              : 'Attiva Prova 30gg'}
-          </span>
+          <Crown className="w-4 h-4 text-purple-600" />
+          Piano Prime
         </button>
 
         <button
@@ -639,6 +583,11 @@ export const StudioDashboard: React.FC = () => {
       {activeTab === 'list' && <StudioAppointments />}
       {activeTab === 'analytics' && <StudioAnalyticsDashboard />}
       {activeTab === 'patients' && <StudioPatientsManagement />}
+      {activeTab === 'receptionist' && (
+        <StudioAiReceptionistView
+          onNavigateToCalendar={() => setActiveTab('calendar')}
+        />
+      )}
       {activeTab === 'ai' && <StudioAiAssistant />}
       {activeTab === 'availability' && <StudioAvailability />}
       {activeTab === 'smart_rules' && <StudioSmartRules />}

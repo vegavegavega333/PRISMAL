@@ -1,8 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --font-mono: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Source Code Pro', 'Fira Code', Consolas, monospace;
+
+  /* ThoughtStream Brand Palette */
+  --color-stone-primary: #78716C;
+  --color-stone-secondary: #A8A29E;
+  --color-stone-tertiary: #1C1917;
+
+  /* ThoughtStream Surface Palette */
+  --color-surface-bg: #FAFAF9;
+  --color-surface-card: #F5F5F4;
+  --color-surface-raised: #EFEDEB;
+
+  /* ThoughtStream Content Palette */
+  --color-content-primary: #1C1917;
+  --color-content-secondary: #57534E;
+  --color-content-tertiary: #A8A29E;
+
+  /* ThoughtStream Border Palette */
+  --color-border-subtle: #E7E5E4;
+  --color-border-medium: #D6D3D1;
+  --color-border-strong: #A8A29E;
+
+  /* ThoughtStream Semantic Colors */
+  --color-semantic-success: #65A30D;
+  --color-semantic-warning: #CA8A04;
+  --color-semantic-error: #DC2626;
+  --color-semantic-info: #78716C;
 }
 
 @layer base {
@@ -44,7 +72,114 @@ body, button, input, select, textarea, span, p, div, code, kbd, samp, pre, h1, h
 
 /* Override any Tailwind font-mono utility so it NEVER pulls in monospace fonts with slashed zeros */
 .font-mono, [class*="font-mono"], code, pre, kbd, samp, tt {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif !important;
+  font-family: 'Source Code Pro', 'Plus Jakarta Sans', system-ui, monospace !important;
   font-variant-numeric: normal !important;
   font-feature-settings: "zero" 0, "slsh" 0 !important;
 }
+
+/* ========================================================= */
+/* THOUGHTSTREAM DESIGN SYSTEM SPECIFICATION                 */
+/* ========================================================= */
+
+.ts-display {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ts-headline {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.ts-subhead {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.ts-btn-primary {
+  background-color: #78716C;
+  color: #FAFAF9;
+  border: 1px solid #78716C;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 0px;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+.ts-btn-primary:hover {
+  background-color: #57534E;
+}
+.ts-btn-primary:active {
+  background-color: #44403C;
+}
+
+.ts-btn-secondary {
+  background-color: transparent;
+  color: #78716C;
+  border: 1px solid #D6D3D1;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 0px;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+.ts-btn-secondary:hover {
+  background-color: #F5F5F4;
+}
+.ts-btn-secondary:active {
+  background-color: #E7E5E4;
+}
+
+.ts-card {
+  background-color: #FAFAF9;
+  border: 1px solid #E7E5E4;
+  border-radius: 0px;
+  padding: 36px;
+  box-shadow: none;
+  transition: border-color 0.15s ease;
+}
+.ts-card:hover {
+  border-color: #D6D3D1;
+}
+
+.ts-card-elevated {
+  background-color: #F5F5F4;
+  border: 1px solid #D6D3D1;
+  border-radius: 0px;
+  padding: 36px;
+  box-shadow: none;
+}
+
+.ts-input {
+  height: 48px;
+  background-color: #FAFAF9;
+  border: 1px solid #D6D3D1;
+  border-radius: 0px;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: #1C1917;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ts-input::placeholder {
+  color: #A8A29E;
+}
+.ts-input:focus {
+  border-color: #78716C;
+  box-shadow: 0 0 0 2px #FAFAF9, 0 0 0 4px #78716C;
+}
+

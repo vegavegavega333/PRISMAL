@@ -77,6 +77,8 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
     setOnboardingStep,
     setCurrentRole,
     setCurrentStudioId,
+    authSession,
+    currentRole,
     setAuthSession,
   } = useApp();
 
@@ -90,6 +92,13 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
     }
   }, [isOpen, initialTab]);
 
+  // Auto-close modal when session is established or Super Admin is active
+  useEffect(() => {
+    if (isOpen && (authSession || currentRole === 'super_admin')) {
+      onClose();
+    }
+  }, [isOpen, authSession, currentRole, onClose]);
+
   // LOGIN STATE
   const [loginRole, setLoginRole] = useState<'studio' | 'super_admin' | 'patient'>(initialLoginRole || 'studio');
   const [loginEmail, setLoginEmail] = useState('');
@@ -98,9 +107,17 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
   const [loginPendingNotice, setLoginPendingNotice] = useState<string | null>(null);
   const [isGoogleChooserOpen, setIsGoogleChooserOpen] = useState(false);
   const [isSupabaseLoading, setIsSupabaseLoading] = useState(false);
-  const [googleTarget, setGoogleTarget] = useState<'studio_login' | 'studio_register' | 'superadmin_login' | 'patient_login'>('studio_login');
+  const [googleTarget, setGoogleTarget] = useState<'studio_login' | 'studio_register' | 'superadmin_login' | 'patient_login' | 'patient_register'>('studio_login');
 
   // REGISTRATION STATE
+  const [regRole, setRegRole] = useState<'studio' | 'patient'>('studio');
+  const [patientRegName, setPatientRegName] = useState('');
+  const [patientRegEmail, setPatientRegEmail] = useState('');
+  const [patientRegPhone, setPatientRegPhone] = useState('');
+  const [patientRegFiscalCode, setPatientRegFiscalCode] = useState('');
+  const [patientRegBirthDate, setPatientRegBirthDate] = useState('');
+  const [patientRegCity, setPatientRegCity] = useState('');
+  const [patientRegPassword, setPatientRegPassword] = useState('');
   const [regStep, setRegStep] = useState<1 | 2 | 3 | 4>(1);
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -288,31 +305,76 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
     }
   };
 
-  // GOOGLE SIGN-IN HANDLER (Official Direct Google OAuth Screen)
+  // HANDLE PATIENT REGISTRATION SUBMIT
+  const handlePatientRegSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError(null);
+    const email = patientRegEmail.trim().toLowerCase();
+    const name = patientRegName.trim();
+    const phone = patientRegPhone.trim();
+    const fiscalCode = patientRegFiscalCode.trim().toUpperCase();
+    const birthDate = patientRegBirthDate.trim();
+    const city = patientRegCity.trim();
+
+    if (!email || !name) {
+      setRegError('Inserisci nome, cognome e un indirizzo email.');
+      return;
+    }
+    if (fiscalCode && fiscalCode.length !== 16) {
+      setRegError('Il codice fiscale italiano deve essere esattamente di 16 caratteri.');
+      return;
+    }
+
+    // Save patient profile data
+    try {
+      const profile = {
+        name,
+        email,
+        phone,
+        fiscalCode,
+        birthDate,
+        city,
+      };
+      localStorage.setItem('prismal_patient_profile', JSON.stringify(profile));
+    } catch {}
+
+    setCurrentRole('patient');
+    setAuthSession({
+      role: 'patient',
+      email,
+      patientName: name,
+    });
+    onClose();
+  };
+
+  // GOOGLE SIGN-IN HANDLER (Direct Official Supabase Google OAuth)
   const handleGoogleLoginClick = async () => {
     setLoginError(null);
     setIsSupabaseLoading(true);
+    const targetType = loginRole === 'studio' ? 'studio' : loginRole === 'patient' ? 'patient' : 'super_admin';
     try {
-      const res = await signInWithGoogleSupabase(loginRole);
+      const res = await signInWithGoogleSupabase(targetType, 'login');
       if (!res.success) {
-        setGoogleTarget(
-          loginRole === 'studio'
-            ? 'studio_login'
-            : loginRole === 'patient'
-            ? 'patient_login'
-            : 'superadmin_login'
-        );
-        setIsGoogleChooserOpen(true);
+        setLoginError(res.error || 'Impossibile connettersi al servizio di autenticazione Google.');
       }
-    } catch {
-      setGoogleTarget(
-        loginRole === 'studio'
-          ? 'studio_login'
-          : loginRole === 'patient'
-          ? 'patient_login'
-          : 'superadmin_login'
-      );
-      setIsGoogleChooserOpen(true);
+    } catch (err: any) {
+      setLoginError(err?.message || 'Errore durante la connessione con Google.');
+    } finally {
+      setIsSupabaseLoading(false);
+    }
+  };
+
+  // GOOGLE REGISTRATION HANDLER (Direct Official Supabase Google OAuth)
+  const handleGoogleRegisterClick = async (role: 'studio' | 'patient') => {
+    setRegError(null);
+    setIsSupabaseLoading(true);
+    try {
+      const res = await signInWithGoogleSupabase(role, 'register');
+      if (!res.success) {
+        setRegError(res.error || 'Impossibile avviare la registrazione con Google.');
+      }
+    } catch (err: any) {
+      setRegError(err?.message || 'Errore durante l\'avvio della registrazione con Google.');
     } finally {
       setIsSupabaseLoading(false);
     }
@@ -323,7 +385,7 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
     setLoginError(null);
     setRegError(null);
 
-    if (googleTarget === 'patient_login') {
+    if (googleTarget === 'patient_login' || googleTarget === 'patient_register') {
       setCurrentRole('patient');
       setAuthSession({
         role: 'patient',
@@ -343,11 +405,13 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
       if (res.success) {
         onClose();
       } else {
-        setLoginError(res.error || `Nessuno studio associato a ${account.email}. Clicca su "Registrati" per crearlo.`);
+        setLoginError(res.error || `Nessuno studio associato a ${account.email}. Clicca su "Registrati con Google" per attivare il tuo studio.`);
       }
     } else if (googleTarget === 'studio_register') {
       const res = startStudioRegistrationWithGoogle(account);
       if (res.success) {
+        setActiveTab('register');
+        setRegRole('studio');
         setRegEmail(account.email);
         setRegStudioName(account.name.toLowerCase().includes('studio') ? account.name : `Studio Odontoiatrico ${account.name}`);
         setRegStep(3); // Skip OTP since Google email is verified!
@@ -361,6 +425,19 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden max-h-[92vh] flex flex-col relative text-slate-900">
         
+        {/* Full-screen Loading Overlay for Google OAuth initialization */}
+        {isSupabaseLoading && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-xs z-50 rounded-3xl flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-150">
+            <div className="relative mb-4">
+              <div className="w-12 h-12 rounded-full border-3 border-purple-500/20 border-t-purple-600 animate-spin" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900">Connessione a Google in corso...</h4>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs">
+              Reindirizzamento sicuro alla schermata ufficiale protetta dei tuoi account Google.
+            </p>
+          </div>
+        )}
+
         {/* Top Header */}
         <div className="p-5 sm:p-6 pb-4 border-b border-slate-100 bg-slate-50/70 relative flex-shrink-0">
           {/* Close button */}
@@ -436,21 +513,21 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Identificati per accedere:
                 </label>
-                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl">
                   <button
                     type="button"
                     onClick={() => {
                       setLoginRole('studio');
                       setLoginError(null);
                     }}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                       loginRole === 'studio'
                         ? 'bg-white text-slate-950 shadow-xs border border-slate-200'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <Building2 className="w-4 h-4 text-sky-600 flex-shrink-0" />
-                    <span className="truncate">Studio</span>
+                    <Building2 className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+                    <span>Studio</span>
                   </button>
 
                   <button
@@ -459,14 +536,14 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                       setLoginRole('patient');
                       setLoginError(null);
                     }}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                       loginRole === 'patient'
                         ? 'bg-white text-emerald-950 shadow-xs border border-emerald-200'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <Users className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span className="truncate">Paziente</span>
+                    <Users className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Paziente</span>
                   </button>
 
                   <button
@@ -475,21 +552,21 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                       setLoginRole('super_admin');
                       setLoginError(null);
                     }}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
                       loginRole === 'super_admin'
                         ? 'bg-white text-purple-950 shadow-xs border border-purple-200'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <ShieldCheck className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <span className="truncate">Super Admin</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
+                    <span>Admin</span>
                   </button>
                 </div>
 
                 <p className="text-[11px] text-slate-500 px-1">
                   {loginRole === 'studio' && 'Accesso gestionale per dentisti: agenda, poltrone, referti e fatturazione.'}
                   {loginRole === 'patient' && 'Accesso per pazienti: visualizza i tuoi appuntamenti prenotati e promemoria.'}
-                  {loginRole === 'super_admin' && 'Accesso riservato alla console centrale di controllo e gestione della piattaforma PRISMAL.'}
+                  {loginRole === 'super_admin' && 'Accesso riservato agli amministratori della piattaforma PRISMAL.'}
                 </p>
               </div>
 
@@ -538,7 +615,7 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
               <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Email {loginRole === 'studio' ? 'dello Studio' : 'Amministratore'}
+                    Email {loginRole === 'studio' ? 'dello Studio' : loginRole === 'patient' ? 'Paziente' : 'Amministratore'}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -549,7 +626,7 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                       required
                       value={loginEmail}
                       onChange={e => setLoginEmail(e.target.value)}
-                      placeholder={loginRole === 'studio' ? 'es. segreteria@studiodentistico.it' : 'prismaldental@gmail.com'}
+                      placeholder={loginRole === 'studio' ? 'es. segreteria@studiodentistico.it' : loginRole === 'patient' ? 'es. mario.rossi@email.it' : 'es. admin@prismal.it'}
                       className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition"
                     />
                   </div>
@@ -605,19 +682,43 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
           {/* ========================================================= */}
           {activeTab === 'register' && (
             <div className="space-y-4">
-              {/* Stepper indicator */}
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-700">
-                  {regStep === 1 && 'Passo 1 di 3: Credenziali Studio'}
-                  {regStep === 2 && 'Passo 2 di 3: Verifica Codice Email'}
-                  {regStep === 3 && 'Passo 3 di 3: Informazioni Studio'}
-                  {regStep === 4 && 'Registrazione Completata!'}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${regStep >= 1 ? 'bg-purple-600' : 'bg-slate-200'}`} />
-                  <span className={`w-2 h-2 rounded-full ${regStep >= 2 ? 'bg-purple-600' : 'bg-slate-200'}`} />
-                  <span className={`w-2 h-2 rounded-full ${regStep >= 3 ? 'bg-purple-600' : 'bg-slate-200'}`} />
-                  <span className={`w-2 h-2 rounded-full ${regStep === 4 ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+              {/* Role Toggle for Registration */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Registrati come:
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegRole('studio');
+                      setRegError(null);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      regRole === 'studio'
+                        ? 'bg-white text-slate-950 shadow-xs border border-slate-200'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+                    <span>Studio Dentistico</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegRole('patient');
+                      setRegError(null);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      regRole === 'patient'
+                        ? 'bg-white text-emerald-950 shadow-xs border border-emerald-200'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span>Paziente</span>
+                  </button>
                 </div>
               </div>
 
@@ -629,17 +730,145 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                 </div>
               )}
 
+              {/* ============================================== */}
+              {/* PATIENT REGISTRATION                           */}
+              {/* ============================================== */}
+              {regRole === 'patient' && (
+                <div className="space-y-3.5">
+                  {/* Google Direct Register for Patient */}
+                  <button
+                    type="button"
+                    onClick={() => handleGoogleRegisterClick('patient')}
+                    className="w-full py-2.5 px-3 bg-white hover:bg-slate-50 text-slate-800 font-bold border border-slate-300 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-xs cursor-pointer hover:border-slate-400 group"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>Registrati con Google</span>
+                  </button>
+
+                  <div className="relative flex items-center my-2">
+                    <div className="flex-grow border-t border-slate-200"></div>
+                    <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">oppure con i tuoi dati</span>
+                    <div className="flex-grow border-t border-slate-200"></div>
+                  </div>
+
+                  <form onSubmit={handlePatientRegSubmit} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Nome e Cognome *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={patientRegName}
+                        onChange={e => setPatientRegName(e.target.value)}
+                        placeholder="es. Mario Rossi"
+                        className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Indirizzo Email *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={patientRegEmail}
+                          onChange={e => setPatientRegEmail(e.target.value)}
+                          placeholder="es. mario.rossi@email.it"
+                          className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Cellulare (per promemoria SMS)
+                        </label>
+                        <input
+                          type="tel"
+                          value={patientRegPhone}
+                          onChange={e => setPatientRegPhone(e.target.value)}
+                          placeholder="es. +39 340 1234567"
+                          className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Codice Fiscale (16 car.)
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={patientRegFiscalCode}
+                          onChange={e => setPatientRegFiscalCode(e.target.value.toUpperCase())}
+                          placeholder="RSSMRA80A01H501U"
+                          className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 uppercase placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Città di Residenza
+                        </label>
+                        <input
+                          type="text"
+                          value={patientRegCity}
+                          onChange={e => setPatientRegCity(e.target.value)}
+                          placeholder="es. Milano"
+                          className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Crea Profilo Paziente & Entra</span>
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* ============================================== */}
+              {/* STUDIO REGISTRATION                            */}
+              {/* ============================================== */}
+              {regRole === 'studio' && (
+                <>
+                  {/* Stepper indicator */}
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-700">
+                      {regStep === 1 && 'Passo 1 di 3: Credenziali Studio'}
+                      {regStep === 2 && 'Passo 2 di 3: Verifica Codice Email'}
+                      {regStep === 3 && 'Passo 3 di 3: Informazioni Studio'}
+                      {regStep === 4 && 'Registrazione Completata!'}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${regStep >= 1 ? 'bg-purple-600' : 'bg-slate-200'}`} />
+                      <span className={`w-2 h-2 rounded-full ${regStep >= 2 ? 'bg-purple-600' : 'bg-slate-200'}`} />
+                      <span className={`w-2 h-2 rounded-full ${regStep >= 3 ? 'bg-purple-600' : 'bg-slate-200'}`} />
+                      <span className={`w-2 h-2 rounded-full ${regStep === 4 ? 'bg-emerald-600' : 'bg-slate-200'}`} />
+                    </div>
+                  </div>
+
               {/* STEP 1: Email & Password or Google */}
               {regStep === 1 && (
                 <div className="space-y-3.5">
-                  {/* Google 1-Click Register */}
+                  {/* Google Direct Register for Studio */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setGoogleTarget('studio_register');
-                      setIsGoogleChooserOpen(true);
-                    }}
-                    className="w-full py-2.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-300 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                    onClick={() => handleGoogleRegisterClick('studio')}
+                    className="w-full py-2.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-300 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer hover:border-slate-400 group"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -647,7 +876,7 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                     </svg>
-                    <span>Registrati con Google (Salta codice OTP)</span>
+                    <span>Registrati con Google</span>
                   </button>
 
                   <div className="relative flex items-center my-2">
@@ -666,7 +895,7 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                         required
                         value={regEmail}
                         onChange={e => setRegEmail(e.target.value)}
-                        placeholder="es. segreteria@dentisticadello.it"
+                        placeholder="es. segreteria@studioraimondi.it"
                         className="block w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 transition"
                       />
                     </div>
@@ -909,11 +1138,13 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
                   </div>
                 </div>
               )}
+                </>
+              )}
 
               {/* Bottom switch to login */}
               {regStep !== 4 && (
                 <div className="pt-2 text-center border-t border-slate-100">
-                  <span className="text-xs text-slate-500">Hai già uno studio registrato? </span>
+                  <span className="text-xs text-slate-500">Hai già un account? </span>
                   <button
                     type="button"
                     onClick={() => {
@@ -940,7 +1171,11 @@ export const UnifiedAuthModal: React.FC<UnifiedAuthModalProps> = ({
             ? 'Accesso Super Admin con Google'
             : googleTarget === 'studio_register'
             ? 'Registra Studio con Google'
-            : 'Accedi allo Studio con Google'
+            : googleTarget === 'patient_register'
+            ? 'Registrati come Paziente con Google'
+            : googleTarget === 'patient_login'
+            ? 'Accedi come Paziente con Google'
+            : 'Accedi con Google'
         }
         subtitle="Seleziona l'account Google per procedere istantaneamente"
         onSelectAccount={handleGoogleAccountSelected}

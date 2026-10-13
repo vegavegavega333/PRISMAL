@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Official Supabase Configuration provided by the user
-export const SUPABASE_URL = 'https://dqbphjwbrhxoqlhupydq.supabase.co';
-export const SUPABASE_ANON_KEY = 'sb_publishable_4OOKzpH4Bq_e0iEo0ZHv3w_hk7SHqtW';
-export const SUPABASE_SECRET_KEY = 'sb_secret_BCaubx_jK1SwYtdpuXczpw_98g2UJOF';
+// Official Supabase Configuration
+export const SUPABASE_URL: string =
+  (import.meta as any).env?.VITE_SUPABASE_URL || 'https://dqbphjwbrhxoqlhupydq.supabase.co';
+export const SUPABASE_ANON_KEY: string =
+  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_4OOKzpH4Bq_e0iEo0ZHv3w_hk7SHqtW';
 
 // Official Stripe Checkout Link provided by the user
 export const STRIPE_SUBSCRIPTION_LINK = 'https://buy.stripe.com/00w00j7ab8LY4on0Xc7IY00';
@@ -21,14 +22,18 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /**
- * Sign in with Google using Supabase Auth client library.
- * Persists the selected user type ('studio' | 'patient') so after OAuth redirect
- * the application can identify and route the user correctly.
+ * Sign in or Register with Google using Supabase Auth client library.
+ * Persists the selected user type ('studio' | 'patient' | 'super_admin') and mode ('login' | 'register')
+ * so after OAuth redirect the application identifies, routes, and requests relevant data.
  */
-export async function signInWithGoogleSupabase(userType: UserType = 'studio') {
+export async function signInWithGoogleSupabase(
+  userType: UserType = 'studio',
+  mode: 'login' | 'register' = 'login'
+) {
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem('prismal_supabase_user_type', userType);
+      localStorage.setItem('prismal_auth_mode', mode);
       localStorage.setItem(
         'prismal_auth_target_role',
         userType === 'patient' ? 'patient' : userType === 'super_admin' ? 'super_admin' : 'studio_admin'
@@ -46,7 +51,7 @@ export async function signInWithGoogleSupabase(userType: UserType = 'studio') {
         skipBrowserRedirect: true,
         queryParams: {
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: 'select_account consent',
         },
       },
     });
@@ -73,6 +78,26 @@ export async function signInWithGoogleSupabase(userType: UserType = 'studio') {
         if (!popup || popup.closed || typeof popup.closed === 'undefined') {
           // If popup was blocked, open in new tab
           window.open(data.url, '_blank');
+        } else {
+          // Monitor popup closure to immediately check and sync session in main window
+          const checkTimer = setInterval(async () => {
+            try {
+              if (popup.closed) {
+                clearInterval(checkTimer);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                  window.postMessage({
+                    type: 'PRISMAL_OAUTH_SUCCESS',
+                    session,
+                    user: session.user,
+                    email: session.user.email,
+                  }, '*');
+                }
+              }
+            } catch {
+              clearInterval(checkTimer);
+            }
+          }, 350);
         }
       } else {
         // Direct browser redirect to classic Google screen!

@@ -1,0 +1,20 @@
+{
+  "provider": "meta_cloud",
+  "senderName": "PRISMAL - Studio Odontoiatrico",
+  "senderNumber": "+39 02 8900 1234",
+  "metaCloud": {
+    "phoneNumberId": "",
+    "accessToken": "",
+    "verifyToken": "prismal_webhook_secret_2026"
+  },
+  "evolutionApi": {
+    "apiUrl": "http://localhost:8080",
+    "apiKey": "",
+    "instanceName": "prismal-bot"
+  },
+  "twilio": {
+    "accountSid": "AC6f93f426d54226c3df72d97f8783e27d",
+    "authToken": "c858347a68e8a07db529d523a01a5926",
+    "fromNumber": "+14155238886"
+  }
+}

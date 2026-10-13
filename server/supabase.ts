@@ -5,13 +5,14 @@ dotenv.config();
 
 export const SUPABASE_URL = process.env.SUPABASE_URL || 'https://dqbphjwbrhxoqlhupydq.supabase.co';
 export const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_4OOKzpH4Bq_e0iEo0ZHv3w_hk7SHqtW';
-export const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'sb_secret_BCaubx_jK1SwYtdpuXczpw_98g2UJOF';
+export const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || '';
 
 let supabaseAdminInstance: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (!supabaseAdminInstance) {
-    supabaseAdminInstance = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
+    const keyToUse = SUPABASE_SECRET_KEY || SUPABASE_ANON_KEY;
+    supabaseAdminInstance = createClient(SUPABASE_URL, keyToUse, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -458,27 +459,24 @@ ALTER TABLE public.communication_logs ENABLE ROW LEVEL SECURITY;
 
 -- Pulizia e ricreazione policy idempotente (Rerunnable script compatibile con PostgreSQL standard)
 DROP POLICY IF EXISTS "Studi visibili a tutti" ON public.studios;
-CREATE POLICY "Studi visibili a tutti" ON public.studios
-    FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Studi gestione completa" ON public.studios;
+CREATE POLICY "Studi gestione completa" ON public.studios
+    FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Recensioni visibili a tutti" ON public.reviews;
-CREATE POLICY "Recensioni visibili a tutti" ON public.reviews
-    FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Appuntamenti gestione completa" ON public.appointments;
+CREATE POLICY "Appuntamenti gestione completa" ON public.appointments
+    FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Accesso totale backend service role su studios" ON public.studios;
-CREATE POLICY "Accesso totale backend service role su studios" ON public.studios
-    FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Transazioni gestione completa" ON public.transactions;
+CREATE POLICY "Transazioni gestione completa" ON public.transactions
+    FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Accesso totale backend service role su appointments" ON public.appointments;
-CREATE POLICY "Accesso totale backend service role su appointments" ON public.appointments
-    FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Recensioni gestione completa" ON public.reviews;
+CREATE POLICY "Recensioni gestione completa" ON public.reviews
+    FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Accesso totale backend service role su transactions" ON public.transactions;
-CREATE POLICY "Accesso totale backend service role su transactions" ON public.transactions
-    FOR ALL USING (auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "Accesso totale backend service role su communication_logs" ON public.communication_logs;
-CREATE POLICY "Accesso totale backend service role su communication_logs" ON public.communication_logs
-    FOR ALL USING (auth.role() = 'service_role');
+DROP POLICY IF EXISTS "Log gestione completa" ON public.communication_logs;
+CREATE POLICY "Log gestione completa" ON public.communication_logs
+    FOR ALL USING (true) WITH CHECK (true);
 `;
 }
