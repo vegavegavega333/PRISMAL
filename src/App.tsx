@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AppProvider, useApp } from './context/AppContext';
 import { supabase } from './services/supabase';
 import { TopNavigation } from './components/common/TopNavigation';
@@ -204,6 +205,7 @@ export default function App() {
   return (
     <AppProvider>
       <MainApp />
+      <SpeedInsights />
     </AppProvider>
   );
 }
